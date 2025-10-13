@@ -179,14 +179,13 @@ CliOptions parseArguments(int argc, char* argv[]) {
             }
         }
         
-        // Interface name without flag (quoted string or non-flag string)
-        else if (!isFlag(arg)) {
-            // Assume it's an interface name
+        // Interface name without flag (only if NET already specified or looks like interface)
+        else if (!isFlag(arg) && opts.showNetwork) {
+            // Interface name for already-enabled network monitoring
             opts.networkInterface = arg;
-            opts.showNetwork = true;  // Implied NET when interface specified
         }
         
-        // Unknown flag
+        // Unknown argument
         else {
             throw std::invalid_argument("Invalid metric or flag '" + arg + 
                                       "'. Use --help for usage information.");
