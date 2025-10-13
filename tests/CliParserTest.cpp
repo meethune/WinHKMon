@@ -2,6 +2,7 @@
 #include <gtest/gtest.h>
 #include <vector>
 #include <string>
+#include <cstring>
 
 using namespace WinHKMon;
 
@@ -13,7 +14,11 @@ public:
         argv_ = new char*[argc_ + 1];
         for (int i = 0; i < argc_; i++) {
             argv_[i] = new char[args[i].size() + 1];
-            strcpy(argv_[i], args[i].c_str());
+#ifdef _WIN32
+            strcpy_s(argv_[i], args[i].size() + 1, args[i].c_str());
+#else
+            std::strcpy(argv_[i], args[i].c_str());
+#endif
         }
         argv_[argc_] = nullptr;
     }
