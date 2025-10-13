@@ -19,11 +19,11 @@ bool StateManager::validateVersion(const std::string& version) const {
 }
 
 std::string StateManager::sanitizeKey(const std::string& key) const {
-    // Replace only characters that would break the file format
-    // Spaces are OK in key names since we use the last underscore as delimiter
+    // Replace whitespace characters that would break space-separated format
+    // Keep other special chars (quotes, colons) for device name preservation
     std::string sanitized = key;
     std::replace_if(sanitized.begin(), sanitized.end(),
-                    [](char c) { return c == '\t' || c == '\n' || c == '\r'; },
+                    [](char c) { return c == ' ' || c == '\t' || c == '\n' || c == '\r'; },
                     '_');
     return sanitized;
 }
