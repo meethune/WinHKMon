@@ -219,6 +219,12 @@ std::string formatText(const SystemMetrics& metrics, bool singleLine) {
     }
     
     std::string result = output.str();
+    
+    // If no metrics were output, provide minimal feedback
+    if (result.empty()) {
+        return singleLine ? "(no metrics)" : "(no metrics)\n";
+    }
+    
     // Remove trailing separator for single-line mode
     if (singleLine && !result.empty() && result.back() == ' ') {
         result.pop_back();

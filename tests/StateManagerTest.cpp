@@ -236,7 +236,9 @@ TEST_F(StateManagerTest, StateFileInTempDirectory) {
     // Verify file exists in temp directory
     EXPECT_TRUE(std::filesystem::exists(testStatePath));
     
-    // Verify it's in the temp directory
-    EXPECT_EQ(testStatePath.parent_path(), std::filesystem::temp_directory_path());
+    // Verify it's in the temp directory (normalize paths for comparison)
+    auto parentPath = testStatePath.parent_path().lexically_normal();
+    auto tempPath = std::filesystem::temp_directory_path().lexically_normal();
+    EXPECT_EQ(parentPath, tempPath);
 }
 
