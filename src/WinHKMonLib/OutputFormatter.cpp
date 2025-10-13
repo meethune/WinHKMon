@@ -120,7 +120,15 @@ std::string formatBitsPerSec(uint64_t bitsPerSec) {
 // Get current timestamp as ISO 8601 string
 std::string getTimestampString() {
     auto now = std::time(nullptr);
-    auto tm = *std::gmtime(&now);
+    std::tm tm{};
+    
+#ifdef _WIN32
+    // Use secure version on Windows
+    gmtime_s(&tm, &now);
+#else
+    // Use standard version on other platforms
+    tm = *std::gmtime(&now);
+#endif
     
     std::ostringstream oss;
     oss << std::put_time(&tm, "%Y-%m-%dT%H:%M:%SZ");

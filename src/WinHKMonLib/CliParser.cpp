@@ -12,7 +12,7 @@ namespace {
 std::string toUpper(const std::string& str) {
     std::string result = str;
     std::transform(result.begin(), result.end(), result.begin(),
-                   [](unsigned char c) { return std::toupper(c); });
+                   [](unsigned char c) { return static_cast<char>(std::toupper(c)); });
     return result;
 }
 
@@ -150,7 +150,7 @@ CliOptions parseArguments(int argc, char* argv[]) {
                         std::to_string(interval));
                 }
                 opts.intervalSeconds = interval;
-            } catch (const std::invalid_argument& e) {
+            } catch (const std::invalid_argument&) {
                 throw std::invalid_argument("Invalid interval value: " + std::string(argv[i]));
             }
         }
