@@ -1,104 +1,370 @@
-# Implementation Plan: [FEATURE]
+# [FEATURE_NAME] Implementation Plan
 
-**Branch**: `[###-feature-name]` | **Date**: [DATE] | **Spec**: [link]
-**Input**: Feature specification from `/specs/[###-feature-name]/spec.md`
+**Version:** [VERSION]
+**Last Updated:** [DATE]
+**Status:** Draft
+**Feature Branch:** `[BRANCH_NAME]`
 
-**Note**: This template is filled in by the `/speckit.plan` command. See `.specify/templates/commands/plan.md` for the execution workflow.
+This document translates requirements from `spec.md` into technical decisions and implementation strategy, following principles in `.specify/memory/constitution.md`.
 
-## Summary
-
-[Extract from feature spec: primary requirement + technical approach from research]
-
-## Technical Context
-
-<!--
-  ACTION REQUIRED: Replace the content in this section with the technical details
-  for the project. The structure here is presented in advisory capacity to guide
-  the iteration process.
--->
-
-**Language/Version**: [e.g., Python 3.11, Swift 5.9, Rust 1.75 or NEEDS CLARIFICATION]  
-**Primary Dependencies**: [e.g., FastAPI, UIKit, LLVM or NEEDS CLARIFICATION]  
-**Storage**: [if applicable, e.g., PostgreSQL, CoreData, files or N/A]  
-**Testing**: [e.g., pytest, XCTest, cargo test or NEEDS CLARIFICATION]  
-**Target Platform**: [e.g., Linux server, iOS 15+, WASM or NEEDS CLARIFICATION]
-**Project Type**: [single/web/mobile - determines source structure]  
-**Performance Goals**: [domain-specific, e.g., 1000 req/s, 10k lines/sec, 60 fps or NEEDS CLARIFICATION]  
-**Constraints**: [domain-specific, e.g., <200ms p95, <100MB memory, offline-capable or NEEDS CLARIFICATION]  
-**Scale/Scope**: [domain-specific, e.g., 10k users, 1M LOC, 50 screens or NEEDS CLARIFICATION]
+---
 
 ## Constitution Check
 
-*GATE: Must pass before Phase 0 research. Re-check after Phase 1 design.*
+**Pre-Implementation Gates** - Verify before proceeding:
 
-[Gates determined based on constitution file]
+- [ ] **Library-First Architecture** (Principle 1): [YES/NO] - [Explanation]
+- [ ] **Native Windows API Mandate** (Principle 2): [YES/NO] - [Explanation]
+- [ ] **CLI-First Interface** (Principle 3): [YES/NO] - [Explanation]
+- [ ] **Test-First Development** (Principle 4): [YES/NO] - [Explanation]
+- [ ] **Simplicity and Anti-Abstraction** (Principle 5): [YES/NO] - [Explanation]
+- [ ] **Integration-First Testing** (Principle 6): [YES/NO] - [Explanation]
 
-## Project Structure
+**Constitutional Compliance Summary:**
+[✅/❌] [Summary of compliance status and any exceptions]
 
-### Documentation (this feature)
+---
 
-```
-specs/[###-feature]/
-├── plan.md              # This file (/speckit.plan command output)
-├── research.md          # Phase 0 output (/speckit.plan command)
-├── data-model.md        # Phase 1 output (/speckit.plan command)
-├── quickstart.md        # Phase 1 output (/speckit.plan command)
-├── contracts/           # Phase 1 output (/speckit.plan command)
-└── tasks.md             # Phase 2 output (/speckit.tasks command - NOT created by /speckit.plan)
-```
+## I. System Architecture
 
-### Source Code (repository root)
-<!--
-  ACTION REQUIRED: Replace the placeholder tree below with the concrete layout
-  for this feature. Delete unused options and expand the chosen structure with
-  real paths (e.g., apps/admin, packages/something). The delivered plan must
-  not include Option labels.
--->
+### High-Level Architecture
 
 ```
-# [REMOVE IF UNUSED] Option 1: Single project (DEFAULT)
-src/
-├── models/
-├── services/
-├── cli/
-└── lib/
+[ASCII diagram of system components and their relationships]
+```
 
+**Rationale:**
+- [Principle] - [Explanation]
+- [Another principle] - [Explanation]
+
+---
+
+## II. Technology Stack
+
+### Programming Language
+- **Language**: [Language and version]
+- **Rationale**: [Why chosen]
+
+### Compiler
+- **Compiler**: [Compiler and version]
+- **Flags**: [Compilation flags]
+- **Rationale**: [Why chosen]
+
+### Build System
+- **Build Tool**: [Tool and version]
+- **Alternative**: [Alternative if any]
+- **Rationale**: [Why chosen]
+
+### Testing Framework
+- **Unit Tests**: [Framework and version]
+- **Rationale**: [Why chosen]
+
+### Dependencies
+
+**Core Library:**
+- [Dependency 1]
+- [Dependency 2]
+- **No other dependencies** (if constitution-compliant)
+
+**Optional Dependencies:**
+- [Dependency] - [Purpose]
+
+---
+
+## III. Component Design
+
+### Component 1: [ComponentName]
+
+**Responsibility**: [What this component does]
+
+**Technical Approach**: [High-level approach]
+
+**Implementation**:
+```cpp
+// Class interface
+class [ComponentName] {
+public:
+    [methods]
+private:
+    [members]
+};
+```
+
+**APIs Used:**
+- [API function 1] - [Purpose]
+- [API function 2] - [Purpose]
+
+**Data Structure:**
+```cpp
+struct [DataStructure] {
+    [fields]
+};
+```
+
+**Rationale**: [Why this approach]
+
+**Alternative**: [Alternative approach and why not selected]
+
+---
+
+[Repeat Component section for each major component]
+
+---
+
+## IV. Command-Line Interface Design
+
+### Argument Parsing Strategy
+
+**Library**: [Library or approach]
+
+**Data Structure**:
+```cpp
+struct CliOptions {
+    [fields]
+};
+```
+
+### Usage Examples
+
+```bash
+# Example 1
+[command]
+
+# Example 2
+[command]
+```
+
+### Exit Codes
+
+- **0**: Success
+- **1**: [Error type]
+- **2**: [Error type]
+
+---
+
+## V. Output Formatting
+
+### Text Output Format
+
+**Compact Mode** (default):
+```
+[Example output]
+```
+
+**Single-Line Mode**:
+```
+[Example output]
+```
+
+### JSON Output Format
+
+```json
+{
+  [Example JSON structure]
+}
+```
+
+### CSV Output Format
+
+```csv
+[Example CSV with headers]
+```
+
+**Implementation**:
+```cpp
+class OutputFormatter {
+public:
+    [methods]
+};
+```
+
+---
+
+## VI. [Technical Section]
+
+[Add sections as needed for:
+- Delta Calculation Strategy
+- Error Handling Strategy
+- State Management
+- Security Considerations
+- Performance Optimization
+- etc.]
+
+---
+
+## VII. Testing Strategy
+
+### Unit Tests
+
+**Target Coverage**: [Percentage]% minimum
+
+**Test Framework**: [Framework]
+
+**Test Structure**:
+```
 tests/
-├── contract/
-├── integration/
-└── unit/
-
-# [REMOVE IF UNUSED] Option 2: Web application (when "frontend" + "backend" detected)
-backend/
-├── src/
-│   ├── models/
-│   ├── services/
-│   └── api/
-└── tests/
-
-frontend/
-├── src/
-│   ├── components/
-│   ├── pages/
-│   └── services/
-└── tests/
-
-# [REMOVE IF UNUSED] Option 3: Mobile + API (when "iOS/Android" detected)
-api/
-└── [same as backend above]
-
-ios/ or android/
-└── [platform-specific structure: feature modules, UI flows, platform tests]
+├── [Test1].cpp
+├── [Test2].cpp
+└── ...
 ```
 
-**Structure Decision**: [Document the selected structure and reference the real
-directories captured above]
+**Example Test**:
+```cpp
+TEST([TestSuite], [TestName]) {
+    // Arrange
+    // Act
+    // Assert
+}
+```
 
-## Complexity Tracking
+**Mock Strategy**: [Approach to mocking]
 
-*Fill ONLY if Constitution Check has violations that must be justified*
+### Integration Tests
 
-| Violation | Why Needed | Simpler Alternative Rejected Because |
-|-----------|------------|-------------------------------------|
-| [e.g., 4th project] | [current need] | [why 3 projects insufficient] |
-| [e.g., Repository pattern] | [specific problem] | [why direct DB access insufficient] |
+**Test Scenarios**:
+1. [Scenario 1]: [Description]
+2. [Scenario 2]: [Description]
+
+---
+
+## VIII. Build and Deployment
+
+### Build Configuration
+
+**CMakeLists.txt** structure:
+```cmake
+cmake_minimum_required(VERSION [version])
+project([ProjectName] VERSION [version])
+
+[CMake configuration]
+```
+
+### Compiler Flags
+
+**Release**: [flags]
+**Debug**: [flags]
+
+### Deployment Package
+
+```
+[PackageName]-[version]-[arch].zip
+├── [executable]
+├── [dependencies]
+└── [documentation]
+```
+
+**Distribution**: [Where and how distributed]
+
+---
+
+## IX. Security Considerations
+
+### Input Validation
+
+[Describe input validation approach]
+
+### File Permissions
+
+[Describe file permission handling]
+
+### Privilege Management
+
+[Describe privilege requirements and handling]
+
+---
+
+## X. Performance Optimization
+
+### Strategies
+
+1. **[Strategy 1]**: [Description]
+2. **[Strategy 2]**: [Description]
+
+**Benchmark Targets**:
+- [Metric 1]: [Target]
+- [Metric 2]: [Target]
+
+---
+
+## XI. Implementation Timeline
+
+**Phase 1: [Phase Name]** ([Duration])
+- [Task 1]
+- [Task 2]
+
+**Phase 2: [Phase Name]** ([Duration])
+- [Task 1]
+- [Task 2]
+
+[Continue for all phases]
+
+**Total**: [Total Duration]
+
+---
+
+## XII. Risks and Mitigations
+
+| Risk | Impact | Mitigation | Likelihood |
+|------|--------|------------|------------|
+| [Risk 1] | [Impact] | [Mitigation] | [Likelihood] |
+| [Risk 2] | [Impact] | [Mitigation] | [Likelihood] |
+
+---
+
+## XIII. Success Criteria
+
+Implementation is successful if:
+
+1. **[Criterion 1]**: [Description]
+2. **[Criterion 2]**: [Description]
+3. **[Criterion 3]**: [Description]
+
+---
+
+## XIV. Open Technical Decisions
+
+**TD-1: [Decision Topic]**
+- **Option A**: [Description] - [Pros/Cons]
+- **Option B**: [Description] - [Pros/Cons]
+- **Recommendation**: [Recommendation]
+
+---
+
+**Document Control:**
+- **Author**: [Author/Team]
+- **Reviewers**: [Reviewers or TBD]
+- **Approval Date**: [Date or Pending]
+- **Next Phase**: [Next phase action]
+- **Related Documents**:
+  - [Specification](./spec.md)
+  - [Research Findings](./research.md)
+  - [Data Model](./specs/data-model.md)
+  - [Contracts](./contracts/)
+
+---
+
+## Template Usage Notes
+
+### Mandatory Sections
+- Constitution Check
+- System Architecture
+- Technology Stack
+- Component Design (at least 1 component)
+- Testing Strategy
+- Build and Deployment
+- Success Criteria
+
+### Optional Sections
+- Command-Line Interface (if applicable)
+- Output Formatting (if applicable)
+- Implementation Timeline (recommended)
+- Risks and Mitigations (recommended)
+- Open Technical Decisions (if any)
+
+### Writing Guidelines
+- Focus on HOW to implement requirements from spec.md
+- Include technical rationale for all major decisions
+- Reference constitution principles when making architectural choices
+- Provide code examples for complex components
+- Document alternatives considered and why rejected
+- Keep consistent with project constitution
