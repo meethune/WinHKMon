@@ -1,0 +1,1145 @@
+# WinHKMon Implementation Tasks
+
+**Version:** 1.0
+**Last Updated:** 2025-10-13
+**Status:** Ready for Implementation
+**Feature Branch:** `feature/winhkmon-system-resource-monitoring`
+
+This document breaks down the implementation plan into executable tasks, organized by deliverable feature increments.
+
+**Task Organization**: Tasks are grouped by feature increment (MVP → Full Feature Set) to enable independent, testable delivery.
+
+**Legend:**
+- `[P]` - Can be parallelized with other `[P]` tasks
+- `[SEQ]` - Must be done sequentially after previous task
+- `[CHECKPOINT]` - Milestone review before proceeding
+- `[US1]`, `[US2]`, `[US3]` - User Story/Feature Increment tags
+
+---
+
+## Feature Increments Overview
+
+| Increment | Description | User Scenario | Metrics | Priority |
+|-----------|-------------|---------------|---------|----------|
+| **US1: Basic Monitoring** | Core CPU + RAM monitoring | System Admin health check | CPU, RAM | P1 (MVP) |
+| **US2: Comprehensive Monitoring** | Add network and disk I/O | Developer workflow | CPU, RAM, DISK, NET | P2 |
+| **US3: Thermal Monitoring** | Add temperature sensors | Power user overclocking | TEMP (+ any metric) | P3 |
+
+**Test Strategy**: Test-first development with 80%+ coverage target (per constitution Principle 4)
+
+---
+
+## Phase 1: Project Setup (Week 1, Days 1-2)
+
+### T001: Initialize Project Structure `[SEQ]`
+**Duration**: 4 hours
+**Dependencies**: None
+**Owner**: TBD
+**Files**: `CMakeLists.txt`, `.gitignore`, `README.md`
+
+**Subtasks:**
+- [ ] Create root `CMakeLists.txt` with project configuration
+- [ ] Set C++17 standard, MSVC compiler flags (`/W4 /WX`)
+- [ ] Create directory structure:
+  ```
+  src/WinHKMonLib/    # Core library
+  src/WinHKMon/       # CLI executable
+  include/WinHKMonLib/ # Public headers
+  tests/              # Unit tests
+  ```
+- [ ] Create `.gitignore` for Visual Studio/CMake artifacts
+- [ ] Create minimal `README.md` template
+- [ ] Verify compilation with empty `main.cpp` (Hello World)
+
+**Acceptance Criteria:**
+- Project compiles successfully with MSVC
+- CMake generates build files without errors
+- Directory structure matches plan
+- Git repository initialized with appropriate `.gitignore`
+
+---
+
+### T002: Set Up Testing Framework `[P]`
+**Duration**: 2 hours
+**Dependencies**: T001
+**Owner**: TBD
+**Files**: `tests/CMakeLists.txt`, `tests/SampleTest.cpp`
+
+**Subtasks:**
+- [ ] Add Google Test via CMake FetchContent
+- [ ] Create `tests/CMakeLists.txt` with gtest configuration
+- [ ] Create sample test file to verify framework:
+  ```cpp
+  TEST(SampleTest, BasicAssertion) {
+      EXPECT_EQ(1, 1);
+  }
+  ```
+- [ ] Configure CMake to discover and run tests via CTest
+- [ ] Verify tests run: `cmake --build . && ctest`
+
+**Acceptance Criteria:**
+- Google Test integrated successfully
+- Sample test compiles and passes
+- `ctest` command runs tests
+- Test results displayed correctly
+
+---
+
+### T003: Define Core Data Structures `[P]`
+**Duration**: 3 hours
+**Dependencies**: T001
+**Owner**: TBD
+**Files**: `include/WinHKMonLib/Types.h`
+
+**Subtasks:**
+- [ ] Create `Types.h` with all data structures from data-model.md:
+  - `SystemMetrics` (central container)
+  - `CpuStats` with `CoreStats`
+  - `MemoryStats`
+  - `DiskStats`
+  - `InterfaceStats`
+  - `TempStats` with `SensorReading`
+  - `MonitorState` (for state persistence)
+  - `CliOptions` (for argument parsing)
+- [ ] Add Doxygen comments for all structures
+- [ ] Use `std::optional` for optional metrics
+- [ ] Create namespace `WinHKMon`
+
+**Acceptance Criteria:**
+- All data structures defined matching data-model.md
+- Compiles without warnings with `/W4`
+- Doxygen comments present for all public structures
+- Proper use of `std::optional` for selective monitoring
+
+---
+
+### `[CHECKPOINT 1]` Project Setup Complete
+**Review Items:**
+- [ ] Project builds successfully
+- [ ] Testing framework operational
+- [ ] Core data structures defined
+- [ ] Ready to implement features
+
+**Estimated Duration**: 2 days
+
+---
+
+## Phase 2: Foundational Components (Week 1, Days 3-5)
+
+These components are prerequisites for ALL user stories and must complete before feature implementation begins.
+
+### T004: Implement CLI Argument Parser `[SEQ]`
+**Duration**: 1 day
+**Dependencies**: T003
+**Owner**: TBD
+**Files**: `src/WinHKMon/CliParser.cpp`, `include/WinHKMonLib/CliParser.h`, `tests/CliParserTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test metric selection parsing (CPU, RAM, DISK, NET, TEMP, IO)
+- [ ] Test format flag parsing (`--format json|csv|text`)
+- [ ] Test interval validation (0.1-3600 seconds)
+- [ ] Test help/version flags
+- [ ] Test invalid argument handling
+- [ ] Test network interface name parsing
+
+**Implementation:**
+- [ ] Create `CliOptions` structure
+- [ ] Implement `parseArguments(int argc, char* argv[])`
+- [ ] Support all flags per CLI contract (contracts/cli-interface.md)
+- [ ] Implement validation logic
+- [ ] Implement help message generation
+- [ ] Implement version output
+
+**Acceptance Criteria:**
+- All tests pass
+- All CLI flags parsed correctly per contract
+- Invalid arguments rejected with actionable error messages
+- Help and version work
+- 100% test coverage of parser logic
+
+---
+
+### T005: Implement Output Formatter `[P]`
+**Duration**: 1 day
+**Dependencies**: T003
+**Owner**: TBD
+**Files**: `src/WinHKMonLib/OutputFormatter.cpp`, `include/WinHKMonLib/OutputFormatter.h`, `tests/OutputFormatterTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test text format generation (compact mode)
+- [ ] Test single-line format generation
+- [ ] Test JSON format generation (validate structure)
+- [ ] Test CSV format generation (header + data row)
+- [ ] Test handling of missing optional fields
+- [ ] Test Unicode symbol rendering vs ASCII fallback
+
+**Implementation:**
+- [ ] Implement `formatText(SystemMetrics, bool singleLine)`
+- [ ] Implement `formatJson(SystemMetrics)` - manual JSON generation
+- [ ] Implement `formatCsv(SystemMetrics, bool includeHeader)`
+- [ ] Handle optional metrics gracefully
+- [ ] Use Unicode symbols with ASCII fallback
+
+**Acceptance Criteria:**
+- All tests pass
+- All output formats match examples in spec.md
+- JSON is valid (parseable)
+- CSV is RFC 4180 compliant
+- Missing data handled gracefully
+- 100% test coverage
+
+---
+
+### T006: Implement State Manager `[P]`
+**Duration**: 1 day
+**Dependencies**: T003
+**Owner**: TBD
+**Files**: `src/WinHKMonLib/StateManager.cpp`, `include/WinHKMonLib/StateManager.h`, `tests/StateManagerTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test save and load round-trip
+- [ ] Test missing state file (first run)
+- [ ] Test corrupted state file handling
+- [ ] Test version mismatch handling
+- [ ] Test secure file permissions
+- [ ] Test state file location (%TEMP%)
+
+**Implementation:**
+- [ ] Implement `getStatePath()` using `GetTempPathW()`
+- [ ] Implement `save(SystemMetrics, timestamp)` - text format
+- [ ] Implement `load(SystemMetrics&, timestamp&)` - parse text format
+- [ ] Implement `validateVersion(string)`
+- [ ] Set secure file permissions (user-only read/write)
+- [ ] Handle all error cases gracefully
+
+**Acceptance Criteria:**
+- All tests pass
+- State persists across runs
+- Corrupted/missing files don't crash program
+- File permissions secure
+- Text format matches research.md specification
+- 100% test coverage
+
+---
+
+### `[CHECKPOINT 2]` Foundation Complete
+**Review Items:**
+- [ ] CLI parser fully functional and tested
+- [ ] Output formatter supports all formats
+- [ ] State manager persists data reliably
+- [ ] Ready to implement monitoring features
+
+**Estimated Duration**: 3 days
+
+---
+
+## Phase 3: US1 - Basic Monitoring (Week 2-3)
+
+**User Story 1**: As a system administrator, I want to quickly check CPU and RAM usage so I can verify server health in under 30 seconds.
+
+**Acceptance Criteria for US1:**
+- CPU usage percentage reported (overall and per-core)
+- CPU frequency reported
+- RAM total, available, and used reported
+- Page file usage reported
+- Single-shot mode works
+- Continuous monitoring mode works
+- Text, JSON, and CSV output formats work
+- Values match Task Manager within ±5%
+
+**Metrics**: CPU, RAM
+**Priority**: P1 (MVP)
+
+---
+
+### T007: [US1] Implement MemoryMonitor `[P]`
+**Duration**: 1 day
+**Dependencies**: T003
+**Owner**: TBD
+**Files**: `src/WinHKMonLib/MemoryMonitor.cpp`, `include/WinHKMonLib/MemoryMonitor.h`, `tests/MemoryMonitorTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test `getCurrentStats()` returns valid data
+- [ ] Test total >= available invariant
+- [ ] Test usage percentages in 0-100 range
+- [ ] Test calculated fields (usedPhysicalBytes)
+- [ ] Test page file statistics
+- [ ] Test error handling (API failure simulation)
+
+**Implementation:**
+- [ ] Create `MemoryMonitor` class
+- [ ] Implement `getCurrentStats()` using `GlobalMemoryStatusEx()`
+- [ ] Populate `MemoryStats` structure
+- [ ] Calculate derived fields (used = total - available, percentages)
+- [ ] Handle API errors gracefully
+
+**Acceptance Criteria:**
+- All tests pass
+- Returns valid memory statistics
+- Matches Task Manager within ±5%
+- 100% test coverage
+- Compiles without warnings
+
+---
+
+### T008: [US1] Implement CpuMonitor `[P]`
+**Duration**: 2 days
+**Dependencies**: T003
+**Owner**: TBD
+**Files**: `src/WinHKMonLib/CpuMonitor.cpp`, `include/WinHKMonLib/CpuMonitor.h`, `tests/CpuMonitorTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test `initialize()` succeeds
+- [ ] Test `getCurrentStats()` returns valid data
+- [ ] Test total usage percentage in 0-100 range
+- [ ] Test per-core usage percentages in 0-100 range
+- [ ] Test core count matches system
+- [ ] Test frequency values > 0
+- [ ] Test cleanup doesn't leak resources
+- [ ] Test error handling (PDH unavailable, access denied)
+
+**Implementation:**
+- [ ] Create `CpuMonitor` class with PDH handles
+- [ ] Implement `initialize()`:
+  - Open PDH query with `PdhOpenQuery()`
+  - Add total CPU counter: `\\Processor(_Total)\\% Processor Time`
+  - Enumerate cores and add per-core counters
+- [ ] Implement `getCurrentStats()`:
+  - Collect PDH data (need 2 samples for percentage)
+  - Get formatted values
+  - Get CPU frequency via `CallNtPowerInformation()`
+  - Populate `CpuStats`
+- [ ] Implement `cleanup()` to close PDH query
+- [ ] Handle errors gracefully
+
+**Acceptance Criteria:**
+- All tests pass
+- CPU usage matches Task Manager within ±5%
+- Per-core stats accurate
+- Frequency values realistic
+- No memory leaks
+- 100% test coverage
+
+---
+
+### T009: [US1] Implement Delta Calculator `[SEQ]`
+**Duration**: 0.5 days
+**Dependencies**: T006
+**Owner**: TBD
+**Files**: `src/WinHKMonLib/DeltaCalculator.cpp`, `include/WinHKMonLib/DeltaCalculator.h`, `tests/DeltaCalculatorTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test rate calculation with valid delta
+- [ ] Test first run (no previous data) handling
+- [ ] Test zero elapsed time handling
+- [ ] Test counter rollover handling
+- [ ] Test negative delta handling (log warning, return 0)
+
+**Implementation:**
+- [ ] Create `DeltaCalculator` class
+- [ ] Implement rate calculation: `(current - previous) / elapsedSeconds`
+- [ ] Use `QueryPerformanceCounter()` for monotonic timestamps
+- [ ] Handle first run (no previous state)
+- [ ] Handle edge cases (rollover, negative deltas)
+
+**Acceptance Criteria:**
+- All tests pass
+- Accurate rate calculations
+- Edge cases handled gracefully
+- 100% test coverage
+
+---
+
+### T010: [US1] Implement Main CLI Application `[SEQ]`
+**Duration**: 1 day
+**Dependencies**: T004, T005, T007, T008, T009
+**Owner**: TBD
+**Files**: `src/WinHKMon/main.cpp`
+
+**Implementation:**
+- [ ] Parse command-line arguments using CliParser
+- [ ] Initialize requested monitors (CPU, RAM for US1)
+- [ ] Load previous state (if exists)
+- [ ] Collect current metrics
+- [ ] Calculate deltas
+- [ ] Format output using OutputFormatter
+- [ ] Save current state
+- [ ] Output to stdout
+- [ ] Handle errors with appropriate exit codes (0, 1, 2, 3)
+
+**Single-Shot Mode:**
+- [ ] Collect metrics once
+- [ ] Output and exit
+
+**Continuous Mode:**
+- [ ] Implement monitoring loop with configurable interval
+- [ ] Handle Ctrl+C gracefully (SetConsoleCtrlHandler)
+- [ ] Clean up resources on exit
+
+**Acceptance Criteria:**
+- Single-shot mode works for CPU and RAM
+- Continuous mode works with configurable interval
+- Ctrl+C shuts down gracefully
+- All output formats work (text, JSON, CSV)
+- Single-line mode works
+- Exit codes correct per CLI contract
+
+---
+
+### T011: [US1] Integration Testing `[SEQ]`
+**Duration**: 1 day
+**Dependencies**: T010
+**Owner**: TBD
+**Files**: `tests/IntegrationTests.cpp` or PowerShell scripts
+
+**Test Scenarios:**
+1. **Accuracy Test**:
+   - [ ] Run `WinHKMon CPU RAM` and compare with Task Manager
+   - [ ] Verify CPU% within ±5%
+   - [ ] Verify RAM within ±5%
+
+2. **Output Format Test**:
+   - [ ] Test `WinHKMon CPU RAM --format json` produces valid JSON
+   - [ ] Test `WinHKMon CPU RAM --format csv` produces valid CSV
+   - [ ] Test `WinHKMon CPU RAM LINE` produces single-line output
+
+3. **Continuous Mode Test**:
+   - [ ] Run `WinHKMon CPU RAM --continuous --interval 2` for 60 seconds
+   - [ ] Verify updates every 2 seconds
+   - [ ] Verify Ctrl+C shutdown
+
+4. **Performance Test**:
+   - [ ] Monitor WinHKMon's own CPU usage (should be < 1%)
+   - [ ] Monitor WinHKMon's memory usage (should be < 10 MB)
+
+**Acceptance Criteria:**
+- All integration tests pass
+- Accuracy within specification
+- Performance targets met
+- All output formats validated
+
+---
+
+### `[CHECKPOINT 3]` US1 Complete - MVP Ready
+**Review Items:**
+- [ ] CPU monitoring functional and accurate
+- [ ] RAM monitoring functional and accurate
+- [ ] All output formats working
+- [ ] Continuous mode stable
+- [ ] Performance targets met (< 1% CPU, < 10 MB RAM)
+- [ ] Integration tests pass
+- [ ] Ready for US2 features
+
+**Deliverable**: Fully functional basic system monitor (CPU + RAM)
+**Estimated Duration**: 1.5 weeks
+
+---
+
+## Phase 4: US2 - Comprehensive Monitoring (Week 4-5)
+
+**User Story 2**: As a software developer, I want to monitor network and disk I/O in addition to CPU/RAM so I can identify all resource bottlenecks during application testing.
+
+**Acceptance Criteria for US2:**
+- All US1 capabilities maintained
+- Disk I/O statistics reported (read/write rates, busy %)
+- Network traffic statistics reported (send/receive rates, interface selection)
+- Delta calculations work correctly
+- State persistence enables rate calculations
+- Values match Task Manager/Performance Monitor within ±5%
+
+**Metrics**: CPU, RAM, DISK, NET
+**Priority**: P2
+
+---
+
+### T012: [US2] Implement NetworkMonitor `[P]`
+**Duration**: 1.5 days
+**Dependencies**: T003, T006, T009
+**Owner**: TBD
+**Files**: `src/WinHKMonLib/NetworkMonitor.cpp`, `include/WinHKMonLib/NetworkMonitor.h`, `tests/NetworkMonitorTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test `initialize()` succeeds
+- [ ] Test `getCurrentStats()` returns interface list
+- [ ] Test loopback interfaces excluded
+- [ ] Test traffic counters are monotonic (increase over time)
+- [ ] Test `selectPrimaryInterface()` logic
+- [ ] Test connection status detection
+- [ ] Test error handling (no interfaces, API failure)
+
+**Implementation:**
+- [ ] Create `NetworkMonitor` class
+- [ ] Implement `initialize()`
+- [ ] Implement `getCurrentStats()`:
+  - Call `GetIfTable2()` to enumerate interfaces
+  - For each interface, extract data from `MIB_IF_ROW2`
+  - Populate `InterfaceStats` (name, InOctets, OutOctets, speeds, connection)
+  - Filter out loopback interfaces
+- [ ] Implement `selectPrimaryInterface()`:
+  - Exclude loopback
+  - Select interface with highest total traffic
+  - Fallback to first Ethernet, then Wi-Fi
+- [ ] Calculate rates using DeltaCalculator and previous state
+- [ ] Handle errors gracefully
+
+**Acceptance Criteria:**
+- All tests pass
+- Enumerates all non-loopback interfaces
+- Traffic rates accurate (match Task Manager Network tab)
+- Primary interface selection works correctly
+- 100% test coverage
+
+---
+
+### T013: [US2] Implement DiskMonitor `[P]`
+**Duration**: 1.5 days
+**Dependencies**: T003, T006, T009
+**Owner**: TBD
+**Files**: `src/WinHKMonLib/DiskMonitor.cpp`, `include/WinHKMonLib/DiskMonitor.h`, `tests/DiskMonitorTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test `initialize()` succeeds with PDH
+- [ ] Test `getCurrentStats()` returns disk list
+- [ ] Test physical disks enumerated (exclude partitions)
+- [ ] Test read/write rates non-negative
+- [ ] Test busy percentage in 0-100 range
+- [ ] Test disk sizes realistic
+- [ ] Test error handling (disk inaccessible, PDH failure)
+
+**Implementation:**
+- [ ] Create `DiskMonitor` class with PDH handles
+- [ ] Implement `initialize()`:
+  - Open PDH query
+  - Add disk counters: `\\PhysicalDisk(*)\\Disk Read Bytes/sec`
+  - Add disk counters: `\\PhysicalDisk(*)\\Disk Write Bytes/sec`
+  - Add disk counters: `\\PhysicalDisk(*)\\% Disk Time`
+- [ ] Implement `getCurrentStats()`:
+  - Collect PDH data
+  - Enumerate physical disks
+  - Get disk sizes using `GetDiskFreeSpaceEx()`
+  - Populate `DiskStats`
+- [ ] Calculate cumulative totals using StateManager
+- [ ] Handle errors gracefully
+- [ ] Implement `cleanup()` to close PDH query
+
+**Acceptance Criteria:**
+- All tests pass
+- Returns valid stats for all physical disks
+- Read/write rates accurate
+- Disk sizes correct
+- Matches Performance Monitor within ±5%
+- 100% test coverage
+
+---
+
+### T014: [US2] Extend Main CLI for DISK and NET `[SEQ]`
+**Duration**: 0.5 days
+**Dependencies**: T010, T012, T013
+**Owner**: TBD
+**Files**: `src/WinHKMon/main.cpp`
+
+**Implementation:**
+- [ ] Add NetworkMonitor initialization when NET metric requested
+- [ ] Add DiskMonitor initialization when DISK/IO metric requested
+- [ ] Integrate monitors into main loop
+- [ ] Handle network interface selection flag (`--interface <name>`)
+- [ ] Handle network unit preference (`--net-units bits|bytes`)
+- [ ] Update OutputFormatter calls to include new metrics
+
+**Acceptance Criteria:**
+- `WinHKMon CPU RAM DISK NET` works
+- Network interface selection works
+- Network unit preference applied
+- All output formats include new metrics
+
+---
+
+### T015: [US2] Integration Testing for DISK and NET `[SEQ]`
+**Duration**: 1 day
+**Dependencies**: T014
+**Owner**: TBD
+
+**Test Scenarios:**
+1. **Network Accuracy Test**:
+   - [ ] Run `WinHKMon NET` and compare with Task Manager
+   - [ ] Verify traffic rates within ±5%
+   - [ ] Test specific interface selection
+
+2. **Disk Accuracy Test**:
+   - [ ] Run `WinHKMon DISK` and compare with Performance Monitor
+   - [ ] Verify read/write rates realistic
+   - [ ] Verify disk sizes correct
+
+3. **Combined Test**:
+   - [ ] Run `WinHKMon CPU RAM DISK NET --format json`
+   - [ ] Verify all metrics present in output
+   - [ ] Verify JSON schema correct
+
+4. **Delta Calculation Test**:
+   - [ ] Run multiple times, verify rates calculated correctly
+   - [ ] Verify state file persistence
+   - [ ] Test first run (no previous state)
+
+**Acceptance Criteria:**
+- All integration tests pass
+- Accuracy within specification
+- Delta calculations correct
+- State persistence working
+
+---
+
+### `[CHECKPOINT 4]` US2 Complete - Comprehensive Monitoring
+**Review Items:**
+- [ ] Network monitoring functional and accurate
+- [ ] Disk monitoring functional and accurate
+- [ ] Delta calculations working correctly
+- [ ] State persistence reliable
+- [ ] All metrics available: CPU, RAM, DISK, NET
+- [ ] Integration tests pass
+
+**Deliverable**: Full system monitor with CPU, RAM, Disk, Network
+**Estimated Duration**: 1.5 weeks
+
+---
+
+## Phase 5: US3 - Thermal Monitoring (Week 6-7)
+
+**User Story 3**: As a power user, I want to monitor CPU temperatures during stress testing so I can verify my overclocked system's thermal stability.
+
+**Acceptance Criteria for US3:**
+- All US1 and US2 capabilities maintained
+- CPU temperature reported (overall and per-core if available)
+- Temperature statistics (min/max/avg) reported
+- Requires administrator privileges (documented and enforced)
+- Gracefully degrades if temperature unavailable
+- Temperature values realistic (20-100°C typical)
+
+**Metrics**: TEMP (+ any other metric)
+**Priority**: P3
+
+---
+
+### T016: [US3] Research LibreHardwareMonitor Integration `[SEQ]`
+**Duration**: 0.5 days
+**Dependencies**: None
+**Owner**: TBD
+**Deliverable**: Integration decision document
+
+**Research Tasks:**
+- [ ] Review LibreHardwareMonitor library (GitHub, NuGet)
+- [ ] Test C++/CLI wrapper approach on development machine
+- [ ] Test COM interop approach (if C++/CLI problematic)
+- [ ] Document chosen integration method with rationale
+- [ ] Identify potential issues and mitigations
+
+**Acceptance Criteria:**
+- Integration method selected and documented
+- Proof-of-concept tested
+- Dependencies identified
+
+---
+
+### T017: [US3] Implement TempMonitor `[P]`
+**Duration**: 3 days
+**Dependencies**: T003, T016
+**Owner**: TBD
+**Files**: `src/WinHKMonLib/TempMonitor.cpp` (C++/CLI), `include/WinHKMonLib/TempMonitor.h`, `tests/TempMonitorTest.cpp`
+
+**Test-First: Write Tests**
+- [ ] Test `initialize()` with admin privileges
+- [ ] Test `initialize()` without admin (should fail gracefully)
+- [ ] Test `getCurrentStats()` returns temperature data
+- [ ] Test temperature values in realistic range (0-150°C)
+- [ ] Test min/max/avg calculations
+- [ ] Test handling of missing sensors
+- [ ] Test cleanup doesn't leak resources
+
+**Implementation:**
+- [ ] Acquire LibreHardwareMonitor library (NuGet or GitHub)
+- [ ] Create `TempMonitor` class (C++/CLI if using managed wrapper)
+- [ ] Implement `isRunningAsAdmin()` privilege check
+- [ ] Implement `initialize()`:
+  - Check admin privileges
+  - Initialize LibreHardwareMonitor `Computer` object
+  - Enable CPU sensor monitoring
+- [ ] Implement `getCurrentStats()`:
+  - Query hardware sensors
+  - Filter `SensorType.Temperature`
+  - Extract CPU temperatures
+  - Calculate min/max/avg
+  - Populate `TempStats`
+- [ ] Implement fallback to WMI `MSAcpi_ThermalZoneTemperature` (if library fails)
+- [ ] Handle errors gracefully (no sensors, library missing, not admin)
+- [ ] Implement `cleanup()`
+
+**Acceptance Criteria:**
+- All tests pass
+- Returns CPU temperatures when running as admin
+- Gracefully fails (no crash) if not admin
+- Temperature values realistic
+- Handles missing sensors
+- 100% test coverage (for testable components)
+
+---
+
+### T018: [US3] Extend Main CLI for TEMP `[SEQ]`
+**Duration**: 0.5 days
+**Dependencies**: T010, T017
+**Owner**: TBD
+**Files**: `src/WinHKMon/main.cpp`
+
+**Implementation:**
+- [ ] Add admin privilege check if TEMP metric requested
+- [ ] Display clear warning if not admin: "Temperature monitoring requires Administrator privileges. Skipping."
+- [ ] Add TempMonitor initialization when TEMP metric requested
+- [ ] Integrate TempMonitor into main loop
+- [ ] Update OutputFormatter calls to include temperature
+- [ ] Handle TEMP errors gracefully (degraded mode)
+
+**Acceptance Criteria:**
+- `WinHKMon TEMP` works when run as admin
+- Clear error message when not admin
+- Temperature included in all output formats
+- Graceful degradation if sensors unavailable
+
+---
+
+### T019: [US3] Integration Testing for TEMP `[SEQ]`
+**Duration**: 1 day
+**Dependencies**: T018
+**Owner**: TBD
+
+**Test Scenarios:**
+1. **Temperature Accuracy Test** (requires admin):
+   - [ ] Run `WinHKMon CPU TEMP` as administrator
+   - [ ] Verify temperature values realistic (typical 30-80°C idle)
+   - [ ] Compare with other monitoring tools (HWiNFO, Core Temp)
+
+2. **Privilege Test**:
+   - [ ] Run `WinHKMon TEMP` as standard user
+   - [ ] Verify clear error message
+   - [ ] Verify program doesn't crash
+
+3. **Stress Test** (requires admin):
+   - [ ] Run CPU stress test
+   - [ ] Monitor `WinHKMon CPU TEMP --continuous --interval 1`
+   - [ ] Verify temperature increases under load
+   - [ ] Verify max temperature calculation correct
+
+4. **Missing Sensors Test**:
+   - [ ] Test on VM without temperature sensors
+   - [ ] Verify graceful degradation
+
+**Acceptance Criteria:**
+- Temperature monitoring works as admin
+- Clear error handling without admin
+- Values realistic under load
+- Handles missing sensors gracefully
+
+---
+
+### `[CHECKPOINT 5]` US3 Complete - Full Feature Set
+**Review Items:**
+- [ ] Temperature monitoring functional (with admin)
+- [ ] Admin privilege check working
+- [ ] Graceful degradation without sensors
+- [ ] All metrics available: CPU, RAM, DISK, NET, TEMP
+- [ ] Integration tests pass
+
+**Deliverable**: Complete system monitor with all features
+**Estimated Duration**: 1.5 weeks
+
+---
+
+## Phase 6: Polish & Cross-Cutting Concerns (Week 8)
+
+### T020: Error Handling Refinement `[P]`
+**Duration**: 1 day
+**Dependencies**: All feature tasks complete
+**Owner**: TBD
+
+**Subtasks:**
+- [ ] Review all error paths in codebase
+- [ ] Ensure error categorization (Fatal, Degraded, Transient) consistent
+- [ ] Improve error messages for clarity and actionability
+- [ ] Add logging to stderr (preserve stdout for output)
+- [ ] Test all error scenarios:
+  - Invalid CLI arguments
+  - API failures (PDH, network, disk)
+  - Missing sensors
+  - Corrupted state file
+  - No network interfaces
+- [ ] Document common errors in README troubleshooting section
+
+**Acceptance Criteria:**
+- All error messages clear and actionable
+- Degraded mode works (continues with reduced functionality)
+- No crashes on any error condition
+- Error messages match examples in CLI contract
+
+---
+
+### T021: Performance Optimization `[P]`
+**Duration**: 1 day
+**Dependencies**: All feature tasks complete
+**Owner**: TBD
+
+**Subtasks:**
+- [ ] Profile application CPU and memory usage
+- [ ] Identify bottlenecks (hotspots)
+- [ ] Optimize hot paths:
+  - Minimize redundant API calls
+  - Cache PDH counter handles
+  - Use `std::vector::reserve()` for known sizes
+  - Avoid unnecessary string copies
+- [ ] Benchmark against targets:
+  - Startup time < 200ms
+  - Sample collection < 50ms
+  - CPU overhead < 1% (< 0.5% target)
+  - Memory footprint < 10 MB
+- [ ] Document performance in README
+- [ ] Create performance regression tests
+
+**Acceptance Criteria:**
+- Meets all performance targets
+- No performance regressions
+- Benchmarks documented
+- Profiling results archived
+
+---
+
+### T022: Documentation `[P]`
+**Duration**: 2 days
+**Dependencies**: All features complete
+**Owner**: TBD
+
+**Subtasks:**
+- [ ] Write comprehensive README.md:
+  - Quick Start (< 5 minutes to first run)
+  - Installation instructions
+  - Usage examples for all scenarios
+  - Complete CLI reference
+  - Output format specifications
+  - Admin requirements for TEMP
+  - Troubleshooting guide
+  - Building from source
+- [ ] Write CHANGELOG.md (v1.0.0 entry)
+- [ ] Generate API documentation with Doxygen
+- [ ] Create example scripts:
+  - `examples/basic-health-check.bat`
+  - `examples/continuous-monitoring.bat`
+  - `examples/json-to-dashboard.ps1`
+- [ ] Review all code comments for clarity
+- [ ] Add LICENSE.txt (select license per constitution)
+
+**Acceptance Criteria:**
+- README comprehensive and user-friendly
+- Examples run successfully
+- API documentation generated
+- Code well-commented
+- License added
+
+---
+
+### T023: Security Review `[SEQ]`
+**Duration**: 1 day
+**Dependencies**: All code complete
+**Owner**: TBD
+
+**Subtasks:**
+- [ ] Review input validation (CLI arguments, state file parsing)
+- [ ] Check for buffer overflows (static analysis)
+- [ ] Verify secure file permissions on state file
+- [ ] Confirm no network calls (packet capture test)
+- [ ] Test privilege escalation scenarios
+- [ ] Run security scanning tools:
+  - Visual Studio Code Analysis (`/analyze`)
+  - Optional: PVS-Studio, Coverity static analysis
+- [ ] Document security considerations in README
+
+**Acceptance Criteria:**
+- No security vulnerabilities found
+- Input validation complete and robust
+- File permissions secure (user-only)
+- Zero network traffic confirmed
+- Security review documented
+
+---
+
+### T024: Compatibility Testing `[P]`
+**Duration**: 2 days
+**Dependencies**: All code complete
+**Owner**: TBD
+
+**Test Matrix:**
+
+| OS Version | Architecture | Status |
+|------------|--------------|--------|
+| Windows 10 21H2 | x64 | [ ] |
+| Windows 10 22H2 | x64 | [ ] |
+| Windows 11 22H2 | x64 | [ ] |
+| Windows 11 23H2 | x64 | [ ] |
+| Windows 11 | ARM64 | [ ] (best effort) |
+
+| Hardware | Status |
+|----------|--------|
+| Intel CPU (4-16 cores) | [ ] |
+| AMD CPU (4-16 cores) | [ ] |
+| Physical machine | [ ] |
+| Hyper-V VM | [ ] |
+| VMware VM | [ ] |
+
+**Subtasks:**
+- [ ] Test on each OS version
+- [ ] Test on Intel and AMD CPUs
+- [ ] Test on physical machines
+- [ ] Test on VMs (Hyper-V, VMware)
+- [ ] Test on ARM64 (best effort)
+- [ ] Document compatibility issues
+- [ ] Fix critical issues
+- [ ] Document known limitations for minor issues
+
+**Acceptance Criteria:**
+- Works on all primary platforms (Windows 10/11 x64)
+- ARM64 tested (best effort, document limitations)
+- VM compatibility verified
+- Compatibility matrix complete and documented
+
+---
+
+### `[CHECKPOINT 6]` Polish Complete - Production Ready
+**Review Items:**
+- [ ] Error handling robust and user-friendly
+- [ ] Performance targets met and validated
+- [ ] Documentation complete and comprehensive
+- [ ] Security review passed with no issues
+- [ ] Compatibility tested across platforms
+- [ ] Ready for release
+
+**Estimated Duration**: 1 week
+
+---
+
+## Phase 7: Release (Week 9)
+
+### T025: Final Integration & Stability Testing `[SEQ]`
+**Duration**: 2 days
+**Dependencies**: All previous tasks
+**Owner**: TBD
+
+**Test Scenarios:**
+
+1. **Accuracy Validation**:
+   - [ ] Run all metrics and compare with Task Manager/Performance Monitor
+   - [ ] Verify accuracy within ±5% specification
+
+2. **24-Hour Stability Test**:
+   - [ ] Run `WinHKMon CPU RAM DISK NET --continuous --interval 1` for 24 hours
+   - [ ] Monitor for crashes, hangs, memory leaks
+   - [ ] Review logs for errors
+
+3. **All CLI Combinations**:
+   - [ ] Test all metric combinations
+   - [ ] Test all output formats
+   - [ ] Test all flags and options
+   - [ ] Verify help and version
+
+4. **Output Format Validation**:
+   - [ ] Validate JSON against schema
+   - [ ] Import CSV into Excel
+   - [ ] Test single-line output in status bar scenario
+
+**Acceptance Criteria:**
+- Zero crashes in 24-hour test
+- All CLI combinations work
+- Accuracy within specification
+- All output formats validated
+
+---
+
+### T026: Package and Release `[SEQ]`
+**Duration**: 1 day
+**Dependencies**: T025
+**Owner**: TBD
+
+**Subtasks:**
+- [ ] Build release binaries (x64, Release configuration, optimizations enabled)
+- [ ] Sign binaries with code signing certificate (if available)
+- [ ] Create deployment package:
+  - `WinHKMon.exe`
+  - `LibreHardwareMonitor/` directory (temperature support)
+  - `README.md`
+  - `LICENSE.txt`
+  - `CHANGELOG.md`
+  - `examples/` directory
+- [ ] Create ZIP archive: `WinHKMon-v1.0.0-x64.zip`
+- [ ] Test on clean Windows 10 machine (portable, no dependencies)
+- [ ] Create GitHub Release:
+  - Tag: `v1.0.0`
+  - Release notes (from CHANGELOG)
+  - Attach ZIP file
+  - Document system requirements
+- [ ] Update repository README with download link
+
+**Acceptance Criteria:**
+- Release package created and tested
+- GitHub Release published
+- Package works on clean install
+- Download link available
+
+---
+
+### `[CHECKPOINT 7]` Release v1.0.0 Complete
+**Final Checklist:**
+- [ ] All 26 tasks completed
+- [ ] All tests passing (unit + integration)
+- [ ] All 3 user stories delivered
+- [ ] Documentation complete
+- [ ] Package available for download
+- [ ] Ready for user adoption
+
+**Total Estimated Duration**: 9 weeks
+
+---
+
+## Task Dependencies Graph
+
+```
+Setup Phase:
+T001 (Project Structure)
+  ├─→ T002 (Testing Framework) [P]
+  ├─→ T003 (Data Structures) [P]
+  └─→ [CHECKPOINT 1]
+
+Foundation Phase:
+T003 → T004 (CLI Parser) [SEQ]
+T003 → T005 (Output Formatter) [P]
+T003 → T006 (State Manager) [P]
+[T004, T005, T006] → [CHECKPOINT 2]
+
+US1 Phase (MVP):
+T003 → T007 (MemoryMonitor) [P]
+T003 → T008 (CpuMonitor) [P]
+T006 → T009 (Delta Calculator) [SEQ]
+[T004, T005, T007, T008, T009] → T010 (Main CLI - US1) [SEQ]
+T010 → T011 (Integration Test US1) [SEQ]
+T011 → [CHECKPOINT 3] MVP Ready
+
+US2 Phase:
+[T003, T006, T009] → T012 (NetworkMonitor) [P]
+[T003, T006, T009] → T013 (DiskMonitor) [P]
+[T010, T012, T013] → T014 (Extend CLI - US2) [SEQ]
+T014 → T015 (Integration Test US2) [SEQ]
+T015 → [CHECKPOINT 4]
+
+US3 Phase:
+T016 (Research LibreHardwareMonitor) [SEQ]
+[T003, T016] → T017 (TempMonitor) [P]
+[T010, T017] → T018 (Extend CLI - US3) [SEQ]
+T018 → T019 (Integration Test US3) [SEQ]
+T019 → [CHECKPOINT 5] Full Feature Set
+
+Polish Phase:
+[All Features] → T020 (Error Handling) [P]
+[All Features] → T021 (Performance) [P]
+[All Features] → T022 (Documentation) [P]
+[T020, T021, T022] → T023 (Security Review) [SEQ]
+[All Features] → T024 (Compatibility Testing) [P]
+[T020-T024] → [CHECKPOINT 6] Production Ready
+
+Release Phase:
+[CHECKPOINT 6] → T025 (Final Testing) [SEQ]
+T025 → T026 (Package & Release) [SEQ]
+T026 → [CHECKPOINT 7] v1.0.0 Released
+```
+
+---
+
+## Parallel Execution Opportunities
+
+### Within Foundation Phase (Week 1, Days 3-5):
+- T004 (CLI Parser) - Developer A
+- T005 (Output Formatter) - Developer B
+- T006 (State Manager) - Developer C
+
+### Within US1 Phase (Week 2):
+- T007 (MemoryMonitor) - Developer A
+- T008 (CpuMonitor) - Developer B
+
+### Within US2 Phase (Week 4):
+- T012 (NetworkMonitor) - Developer A
+- T013 (DiskMonitor) - Developer B
+
+### Within Polish Phase (Week 8):
+- T020 (Error Handling) - Developer A
+- T021 (Performance) - Developer B
+- T022 (Documentation) - Developer C
+- T024 (Compatibility) - Developer D
+
+**Maximum Parallelism**: 4 developers can work simultaneously during Foundation and Polish phases.
+
+---
+
+## Implementation Strategy
+
+### MVP First (US1 Only) - Week 1-3
+**Deliverable**: Basic system monitor (CPU + RAM)
+**Tasks**: T001-T011 (11 tasks)
+**Duration**: 3 weeks
+**Value**: Immediately useful for system administrators
+
+**Benefits**:
+- Fastest path to working product
+- Early feedback from users
+- Foundation for remaining features
+- Constitutional compliance verified
+
+### Incremental Delivery
+- **Release v0.5 (MVP)**: After US1 complete (3 weeks)
+- **Release v0.8 (Comprehensive)**: After US2 complete (5 weeks)
+- **Release v1.0 (Full)**: After US3 + Polish (9 weeks)
+
+---
+
+## Task Summary
+
+**Total Tasks**: 26
+**Total Duration**: 9 weeks (with parallelization)
+
+**By Phase**:
+- Setup: 3 tasks (2 days)
+- Foundation: 3 tasks (3 days)
+- US1 (MVP): 5 tasks (1.5 weeks)
+- US2: 4 tasks (1.5 weeks)
+- US3: 4 tasks (1.5 weeks)
+- Polish: 5 tasks (1 week)
+- Release: 2 tasks (3 days)
+
+**By User Story**:
+- US1 (Basic Monitoring): 5 tasks, 1.5 weeks
+- US2 (Comprehensive Monitoring): 4 tasks, 1.5 weeks
+- US3 (Thermal Monitoring): 4 tasks, 1.5 weeks
+
+**Parallel Opportunities**: 15 tasks marked `[P]` can be parallelized
+
+**Test Coverage**:
+- 13 test-first tasks (TDD approach)
+- Target: 80%+ code coverage
+- Integration tests for each user story
+
+**MVP Scope**: Tasks T001-T011 (11 tasks, 3 weeks)
+
+---
+
+**Document Control:**
+- **Author**: WinHKMon Task Planning Team
+- **Last Updated**: 2025-10-13
+- **Status**: Ready for Implementation
+- **Next Step**: Assign tasks and begin Sprint 1 (Setup + Foundation)
+- **Related Documents**:
+  - [Specification](./spec.md) - User stories and requirements
+  - [Implementation Plan](./plan.md) - Technical design
+  - [Data Model](./specs/data-model.md) - Data structures
+  - [CLI Contract](./contracts/cli-interface.md) - Interface specification
+  - [Quick Start Guide](./quickstart.md) - Developer onboarding
+
