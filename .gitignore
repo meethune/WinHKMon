@@ -1,0 +1,82 @@
+# Visual Studio / MSVC
+*.user
+*.suo
+*.sdf
+*.opensdf
+*.VC.db
+*.VC.opendb
+.vs/
+.vscode/
+*.vcxproj.user
+
+# CMake
+CMakeCache.txt
+CMakeFiles/
+CMakeScripts/
+cmake_install.cmake
+install_manifest.txt
+compile_commands.json
+CTestTestfile.cmake
+_deps/
+out/
+build/
+Build/
+
+# Build artifacts
+*.exe
+*.dll
+*.lib
+*.obj
+*.o
+*.ilk
+*.pdb
+*.exp
+*.iobj
+*.ipdb
+
+# C++ artifacts
+__pycache__/
+*.pyc
+*.so
+*.dylib
+*.a
+
+# Testing
+Testing/
+test_detail.xml
+*.gcov
+*.gcda
+*.gcno
+
+# Temporary files
+*.tmp
+*.swp
+*.swo
+*~
+*.log
+*.bak
+
+# IDE
+.idea/
+*.iml
+.clangd/
+.cache/
+
+# OS
+.DS_Store
+Thumbs.db
+desktop.ini
+ehthumbs.db
+
+# Package managers
+vcpkg_installed/
+packages/
+
+# State files (runtime)
+*.dat
+
+# Documentation build
+html/
+latex/
+docs/_build/
+

@@ -38,18 +38,18 @@ This document breaks down the implementation plan into executable tasks, organiz
 **Files**: `CMakeLists.txt`, `.gitignore`, `README.md`
 
 **Subtasks:**
-- [ ] Create root `CMakeLists.txt` with project configuration
-- [ ] Set C++17 standard, MSVC compiler flags (`/W4 /WX`)
-- [ ] Create directory structure:
+- [X] Create root `CMakeLists.txt` with project configuration
+- [X] Set C++17 standard, MSVC compiler flags (`/W4 /WX`)
+- [X] Create directory structure:
   ```
   src/WinHKMonLib/    # Core library
   src/WinHKMon/       # CLI executable
   include/WinHKMonLib/ # Public headers
   tests/              # Unit tests
   ```
-- [ ] Create `.gitignore` for Visual Studio/CMake artifacts
-- [ ] Create minimal `README.md` template
-- [ ] Verify compilation with empty `main.cpp` (Hello World)
+- [X] Create `.gitignore` for Visual Studio/CMake artifacts
+- [X] Create minimal `README.md` template
+- [X] Verify compilation with empty `main.cpp` (Hello World)
 
 **Acceptance Criteria:**
 - Project compiles successfully with MSVC
@@ -66,16 +66,16 @@ This document breaks down the implementation plan into executable tasks, organiz
 **Files**: `tests/CMakeLists.txt`, `tests/SampleTest.cpp`
 
 **Subtasks:**
-- [ ] Add Google Test via CMake FetchContent
-- [ ] Create `tests/CMakeLists.txt` with gtest configuration
-- [ ] Create sample test file to verify framework:
+- [X] Add Google Test via CMake FetchContent
+- [X] Create `tests/CMakeLists.txt` with gtest configuration
+- [X] Create sample test file to verify framework:
   ```cpp
   TEST(SampleTest, BasicAssertion) {
       EXPECT_EQ(1, 1);
   }
   ```
-- [ ] Configure CMake to discover and run tests via CTest
-- [ ] Verify tests run: `cmake --build . && ctest`
+- [X] Configure CMake to discover and run tests via CTest
+- [X] Verify tests run: `cmake --build . && ctest`
 
 **Acceptance Criteria:**
 - Google Test integrated successfully
@@ -92,7 +92,7 @@ This document breaks down the implementation plan into executable tasks, organiz
 **Files**: `include/WinHKMonLib/Types.h`
 
 **Subtasks:**
-- [ ] Create `Types.h` with all data structures from data-model.md:
+- [X] Create `Types.h` with all data structures from data-model.md:
   - `SystemMetrics` (central container)
   - `CpuStats` with `CoreStats`
   - `MemoryStats`
@@ -101,9 +101,9 @@ This document breaks down the implementation plan into executable tasks, organiz
   - `TempStats` with `SensorReading`
   - `MonitorState` (for state persistence)
   - `CliOptions` (for argument parsing)
-- [ ] Add Doxygen comments for all structures
-- [ ] Use `std::optional` for optional metrics
-- [ ] Create namespace `WinHKMon`
+- [X] Add Doxygen comments for all structures
+- [X] Use `std::optional` for optional metrics
+- [X] Create namespace `WinHKMon`
 
 **Acceptance Criteria:**
 - All data structures defined matching data-model.md
@@ -115,12 +115,13 @@ This document breaks down the implementation plan into executable tasks, organiz
 
 ### `[CHECKPOINT 1]` Project Setup Complete
 **Review Items:**
-- [ ] Project builds successfully
-- [ ] Testing framework operational
-- [ ] Core data structures defined
-- [ ] Ready to implement features
+- [X] Project builds successfully
+- [X] Testing framework operational
+- [X] Core data structures defined
+- [X] Ready to implement features
 
 **Estimated Duration**: 2 days
+**Status**: ✅ COMPLETED
 
 ---
 
@@ -135,20 +136,20 @@ These components are prerequisites for ALL user stories and must complete before
 **Files**: `src/WinHKMon/CliParser.cpp`, `include/WinHKMonLib/CliParser.h`, `tests/CliParserTest.cpp`
 
 **Test-First: Write Tests**
-- [ ] Test metric selection parsing (CPU, RAM, DISK, NET, TEMP, IO)
-- [ ] Test format flag parsing (`--format json|csv|text`)
-- [ ] Test interval validation (0.1-3600 seconds)
-- [ ] Test help/version flags
-- [ ] Test invalid argument handling
-- [ ] Test network interface name parsing
+- [X] Test metric selection parsing (CPU, RAM, DISK, NET, TEMP, IO)
+- [X] Test format flag parsing (`--format json|csv|text`)
+- [X] Test interval validation (0.1-3600 seconds)
+- [X] Test help/version flags
+- [X] Test invalid argument handling
+- [X] Test network interface name parsing
 
 **Implementation:**
-- [ ] Create `CliOptions` structure
-- [ ] Implement `parseArguments(int argc, char* argv[])`
-- [ ] Support all flags per CLI contract (contracts/cli-interface.md)
-- [ ] Implement validation logic
-- [ ] Implement help message generation
-- [ ] Implement version output
+- [X] Create `CliOptions` structure
+- [X] Implement `parseArguments(int argc, char* argv[])`
+- [X] Support all flags per CLI contract (contracts/cli-interface.md)
+- [X] Implement validation logic
+- [X] Implement help message generation
+- [X] Implement version output
 
 **Acceptance Criteria:**
 - All tests pass
@@ -166,19 +167,19 @@ These components are prerequisites for ALL user stories and must complete before
 **Files**: `src/WinHKMonLib/OutputFormatter.cpp`, `include/WinHKMonLib/OutputFormatter.h`, `tests/OutputFormatterTest.cpp`
 
 **Test-First: Write Tests**
-- [ ] Test text format generation (compact mode)
-- [ ] Test single-line format generation
-- [ ] Test JSON format generation (validate structure)
-- [ ] Test CSV format generation (header + data row)
-- [ ] Test handling of missing optional fields
-- [ ] Test Unicode symbol rendering vs ASCII fallback
+- [X] Test text format generation (compact mode)
+- [X] Test single-line format generation
+- [X] Test JSON format generation (validate structure)
+- [X] Test CSV format generation (header + data row)
+- [X] Test handling of missing optional fields
+- [X] Test Unicode symbol rendering vs ASCII fallback
 
 **Implementation:**
-- [ ] Implement `formatText(SystemMetrics, bool singleLine)`
-- [ ] Implement `formatJson(SystemMetrics)` - manual JSON generation
-- [ ] Implement `formatCsv(SystemMetrics, bool includeHeader)`
-- [ ] Handle optional metrics gracefully
-- [ ] Use Unicode symbols with ASCII fallback
+- [X] Implement `formatText(SystemMetrics, bool singleLine)`
+- [X] Implement `formatJson(SystemMetrics)` - manual JSON generation
+- [X] Implement `formatCsv(SystemMetrics, bool includeHeader)`
+- [X] Handle optional metrics gracefully
+- [X] Use Unicode symbols with ASCII fallback
 
 **Acceptance Criteria:**
 - All tests pass
@@ -197,20 +198,20 @@ These components are prerequisites for ALL user stories and must complete before
 **Files**: `src/WinHKMonLib/StateManager.cpp`, `include/WinHKMonLib/StateManager.h`, `tests/StateManagerTest.cpp`
 
 **Test-First: Write Tests**
-- [ ] Test save and load round-trip
-- [ ] Test missing state file (first run)
-- [ ] Test corrupted state file handling
-- [ ] Test version mismatch handling
-- [ ] Test secure file permissions
-- [ ] Test state file location (%TEMP%)
+- [X] Test save and load round-trip
+- [X] Test missing state file (first run)
+- [X] Test corrupted state file handling
+- [X] Test version mismatch handling
+- [X] Test secure file permissions
+- [X] Test state file location (%TEMP%)
 
 **Implementation:**
-- [ ] Implement `getStatePath()` using `GetTempPathW()`
-- [ ] Implement `save(SystemMetrics, timestamp)` - text format
-- [ ] Implement `load(SystemMetrics&, timestamp&)` - parse text format
-- [ ] Implement `validateVersion(string)`
-- [ ] Set secure file permissions (user-only read/write)
-- [ ] Handle all error cases gracefully
+- [X] Implement `getStatePath()` using `GetTempPathW()`
+- [X] Implement `save(SystemMetrics, timestamp)` - text format
+- [X] Implement `load(SystemMetrics&, timestamp&)` - parse text format
+- [X] Implement `validateVersion(string)`
+- [X] Set secure file permissions (user-only read/write)
+- [X] Handle all error cases gracefully
 
 **Acceptance Criteria:**
 - All tests pass
@@ -224,12 +225,13 @@ These components are prerequisites for ALL user stories and must complete before
 
 ### `[CHECKPOINT 2]` Foundation Complete
 **Review Items:**
-- [ ] CLI parser fully functional and tested
-- [ ] Output formatter supports all formats
-- [ ] State manager persists data reliably
-- [ ] Ready to implement monitoring features
+- [X] CLI parser fully functional and tested
+- [X] Output formatter supports all formats
+- [X] State manager persists data reliably
+- [X] Ready to implement monitoring features
 
 **Estimated Duration**: 3 days
+**Status**: ✅ COMPLETED
 
 ---
 
