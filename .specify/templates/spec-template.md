@@ -1,115 +1,276 @@
-# Feature Specification: [FEATURE NAME]
+# Feature Specification: [FEATURE_NAME]
 
-**Feature Branch**: `[###-feature-name]`  
-**Created**: [DATE]  
-**Status**: Draft  
-**Input**: User description: "$ARGUMENTS"
+**Version:** [VERSION]
+**Last Updated:** [DATE]
+**Status:** Draft
 
-## User Scenarios & Testing *(mandatory)*
-
-<!--
-  IMPORTANT: User stories should be PRIORITIZED as user journeys ordered by importance.
-  Each user story/journey must be INDEPENDENTLY TESTABLE - meaning if you implement just ONE of them,
-  you should still have a viable MVP (Minimum Viable Product) that delivers value.
-  
-  Assign priorities (P1, P2, P3, etc.) to each story, where P1 is the most critical.
-  Think of each story as a standalone slice of functionality that can be:
-  - Developed independently
-  - Tested independently
-  - Deployed independently
-  - Demonstrated to users independently
--->
-
-### User Story 1 - [Brief Title] (Priority: P1)
-
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently - e.g., "Can be fully tested by [specific action] and delivers [specific value]"]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
-2. **Given** [initial state], **When** [action], **Then** [expected outcome]
+[Brief feature description - 2-3 sentences explaining WHAT this feature does and WHY it exists]
 
 ---
 
-### User Story 2 - [Brief Title] (Priority: P2)
+## Executive Summary
 
-[Describe this user journey in plain language]
-
-**Why this priority**: [Explain the value and why it has this priority level]
-
-**Independent Test**: [Describe how this can be tested independently]
-
-**Acceptance Scenarios**:
-
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
+[High-level overview of the feature for stakeholders. Include:
+- What problem does this solve?
+- Who benefits from this?
+- Primary use cases (3-5 bullet points)]
 
 ---
 
-### User Story 3 - [Brief Title] (Priority: P3)
+## I. User Scenarios
 
-[Describe this user journey in plain language]
+### Scenario 1: [Primary User Journey Title]
 
-**Why this priority**: [Explain the value and why it has this priority level]
+**Actor:** [User persona name/role]
 
-**Independent Test**: [Describe how this can be tested independently]
+**Context:** [Situation/background when user needs this feature]
 
-**Acceptance Scenarios**:
+**Goal:** [What the user wants to accomplish]
 
-1. **Given** [initial state], **When** [action], **Then** [expected outcome]
+**Steps:**
+1. [User action]
+2. [System response]
+3. [User action]
+4. [Expected outcome]
+
+**Success Outcome:** [What success looks like from user perspective]
 
 ---
 
-[Add more user stories as needed, each with an assigned priority]
+[Add more scenarios as needed - typically 2-4 scenarios covering primary flows]
 
-### Edge Cases
+---
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right edge cases.
--->
+## II. Functional Requirements
 
-- What happens when [boundary condition]?
-- How does system handle [error scenario]?
+### FR-1: [Requirement Category Name]
 
-## Requirements *(mandatory)*
+**What:** [Clear statement of what functionality must exist]
 
-<!--
-  ACTION REQUIRED: The content in this section represents placeholders.
-  Fill them out with the right functional requirements.
--->
+**Why:** [Business/user value justification]
 
-### Functional Requirements
+**Requirements:**
 
-- **FR-001**: System MUST [specific capability, e.g., "allow users to create accounts"]
-- **FR-002**: System MUST [specific capability, e.g., "validate email addresses"]  
-- **FR-003**: Users MUST be able to [key interaction, e.g., "reset their password"]
-- **FR-004**: System MUST [data requirement, e.g., "persist user preferences"]
-- **FR-005**: System MUST [behavior, e.g., "log all security events"]
+**FR-1.1** [MUST/SHOULD/MAY] [specific requirement]
+- **Acceptance Criteria**: [How to verify this requirement is met]
+- **Constraint**: [Any limitations or boundaries]
+- **Why**: [If not obvious, explain the value]
 
-*Example of marking unclear requirements:*
+**FR-1.2** [MUST/SHOULD/MAY] [specific requirement]
+- **Acceptance Criteria**: [How to verify this requirement is met]
+- **Why**: [If not obvious, explain the value]
 
-- **FR-006**: System MUST authenticate users via [NEEDS CLARIFICATION: auth method not specified - email/password, SSO, OAuth?]
-- **FR-007**: System MUST retain user data for [NEEDS CLARIFICATION: retention period not specified]
+[Add more sub-requirements as needed]
 
-### Key Entities *(include if feature involves data)*
+---
 
-- **[Entity 1]**: [What it represents, key attributes without implementation]
-- **[Entity 2]**: [What it represents, relationships to other entities]
+[Add more functional requirement categories as needed]
 
-## Success Criteria *(mandatory)*
+---
 
-<!--
-  ACTION REQUIRED: Define measurable success criteria.
-  These must be technology-agnostic and measurable.
--->
+## III. Non-Functional Requirements
 
-### Measurable Outcomes
+### NFR-1: Performance
 
-- **SC-001**: [Measurable metric, e.g., "Users can complete account creation in under 2 minutes"]
-- **SC-002**: [Measurable metric, e.g., "System handles 1000 concurrent users without degradation"]
-- **SC-003**: [User satisfaction metric, e.g., "90% of users successfully complete primary task on first attempt"]
-- **SC-004**: [Business metric, e.g., "Reduce support tickets related to [X] by 50%"]
+**Why:** [Reason these performance characteristics matter]
+
+**Requirements:**
+
+**NFR-1.1** [Specific performance requirement]
+- **Measurement**: [How to measure]
+- **Test System**: [Under what conditions]
+
+[Add more performance requirements]
+
+---
+
+### NFR-2: Reliability
+
+**Why:** [Reason reliability matters for this feature]
+
+**Requirements:**
+
+**NFR-2.1** [Specific reliability requirement]
+- **Measurement**: [How to measure]
+
+[Add more reliability requirements]
+
+---
+
+### NFR-3: Usability
+
+**Why:** [Reason usability matters]
+
+**Requirements:**
+
+**NFR-3.1** [Specific usability requirement]
+- **Example**: [Concrete example of good vs. bad]
+
+[Add more usability requirements]
+
+---
+
+### NFR-4: Security *(Optional - include if feature has security implications)*
+
+**Why:** [Security considerations]
+
+**Requirements:**
+
+**NFR-4.1** [Specific security requirement]
+- **Verification**: [How to verify compliance]
+
+---
+
+### NFR-5: Compatibility *(Optional - include if compatibility matters)*
+
+**Why:** [Compatibility needs]
+
+**Requirements:**
+
+**NFR-5.1** [Specific compatibility requirement]
+
+---
+
+## IV. Success Criteria
+
+[Define measurable, technology-agnostic outcomes that indicate feature success]
+
+**Criterion 1: [Metric Category]**
+- **Target**: [Specific measurable goal]
+- **Measurement**: [How to measure this]
+- **Rationale**: [Why this metric matters]
+
+**Criterion 2: [Metric Category]**
+- **Target**: [Specific measurable goal]
+- **Measurement**: [How to measure this]
+
+[Add 3-6 success criteria covering different aspects: adoption, performance, 
+accuracy, reliability, user satisfaction]
+
+---
+
+## V. Key Entities *(Optional - include if feature involves data models)*
+
+[Describe main data entities and their relationships without implementation details]
+
+**Entity: [EntityName]**
+- **Description**: [What this entity represents]
+- **Key Attributes**:
+  - [Attribute name]: [Description and constraints]
+  - [Attribute name]: [Description and constraints]
+- **Relationships**: [How this relates to other entities]
+
+---
+
+## VI. Edge Cases and Error Scenarios
+
+[Identify boundary conditions and error handling needs]
+
+**Edge Case 1: [Scenario]**
+- **Condition**: [When this occurs]
+- **Expected Behavior**: [How system should respond]
+- **Why Important**: [User impact if not handled]
+
+**Error Scenario 1: [Failure Type]**
+- **Trigger**: [What causes this error]
+- **User Experience**: [What user sees/experiences]
+- **Recovery**: [How user can resolve or what happens next]
+
+[Add 3-5 edge cases and error scenarios]
+
+---
+
+## VII. Out of Scope
+
+[Explicitly state what is NOT included in this feature to prevent scope creep]
+
+**OS-1** [Feature or capability]
+- **Rationale**: [Why excluded]
+- **Future**: [If/when this might be added]
+
+[Add 3-5 out-of-scope items]
+
+---
+
+## VIII. Open Questions *(Remove section if no questions remain)*
+
+**Q-1:** [Question about unclear aspect]
+- **Trade-off**: [Competing considerations]
+- **Decision**: [NEEDS CLARIFICATION] or [Decided: answer]
+
+[Maximum 3 questions - prioritize by impact]
+
+---
+
+## IX. Dependencies and Assumptions
+
+### Dependencies
+
+**D-1:** [External dependency]
+- **Type**: [System/Service/API/Data]
+- **Impact if Unavailable**: [What breaks]
+
+### Assumptions
+
+**A-1:** [Assumption about users/environment/constraints]
+**A-2:** [Assumption about users/environment/constraints]
+
+[Add all relevant dependencies and assumptions]
+
+---
+
+## X. Constraints
+
+[Technical, business, or regulatory limitations]
+
+**C-1:** [Constraint description]
+**C-2:** [Constraint description]
+
+---
+
+## XI. Glossary *(Optional - include if domain-specific terms used)*
+
+**Term** | **Definition**
+---------|---------------
+[Term] | [Clear, concise definition]
+[Acronym] | [What it stands for and means]
+
+---
+
+**Document Control:**
+- **Author**: [Author name/team]
+- **Reviewers**: [Reviewer names or "TBD"]
+- **Approval Date**: [Date or "Pending"]
+- **Next Review**: [When to review again]
+
+---
+
+## Template Usage Notes
+
+### Mandatory Sections (must be completed):
+- Executive Summary
+- User Scenarios (at least 1)
+- Functional Requirements (at least 1 category)
+- Non-Functional Requirements (Performance, Reliability, Usability minimum)
+- Success Criteria
+- Out of Scope
+- Dependencies and Assumptions
+- Constraints
+
+### Optional Sections (include only if relevant):
+- Key Entities (if data models involved)
+- Security NFR (if security implications)
+- Compatibility NFR (if platform concerns)
+- Edge Cases (recommended but optional)
+- Open Questions (remove if none)
+- Glossary (if domain-specific terms)
+
+### Writing Guidelines:
+- Focus on WHAT and WHY, never HOW
+- No implementation details (languages, frameworks, databases, APIs)
+- Written for business stakeholders, not developers
+- Every requirement must be testable and unambiguous
+- Use MUST (required), SHOULD (recommended), MAY (optional)
+- Success criteria must be measurable and technology-agnostic
+- Keep [NEEDS CLARIFICATION] markers to maximum of 3
+- Document reasonable defaults in Assumptions section

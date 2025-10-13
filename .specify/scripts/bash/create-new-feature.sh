@@ -1,97 +1,94 @@
-#!/usr/bin/env bash
+#!/bin/bash
+
+# create-new-feature.sh
+# Creates a new feature branch and initializes spec file structure
+# Usage: ./create-new-feature.sh [--json] "feature description"
 
 set -e
 
-JSON_MODE=false
-ARGS=()
-for arg in "$@"; do
-    case "$arg" in
-        --json) JSON_MODE=true ;;
-        --help|-h) echo "Usage: $0 [--json] <feature_description>"; exit 0 ;;
-        *) ARGS+=("$arg") ;;
-    esac
-done
+# Check if --json flag is present
+JSON_OUTPUT=false
+if [[ "$1" == "--json" ]]; then
+    JSON_OUTPUT=true
+    shift
+fi
 
-FEATURE_DESCRIPTION="${ARGS[*]}"
-if [ -z "$FEATURE_DESCRIPTION" ]; then
-    echo "Usage: $0 [--json] <feature_description>" >&2
+# Get feature description from arguments
+FEATURE_DESC="$1"
+if [[ -z "$FEATURE_DESC" ]]; then
+    echo "Error: Feature description required" >&2
     exit 1
 fi
 
-# Function to find the repository root by searching for existing project markers
-find_repo_root() {
-    local dir="$1"
-    while [ "$dir" != "/" ]; do
-        if [ -d "$dir/.git" ] || [ -d "$dir/.specify" ]; then
-            echo "$dir"
-            return 0
-        fi
-        dir="$(dirname "$dir")"
-    done
-    return 1
-}
-
-# Resolve repository root. Prefer git information when available, but fall back
-# to searching for repository markers so the workflow still functions in repositories that
-# were initialised with --no-git.
+# Get repository root (assuming script is in .specify/scripts/bash)
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
-if git rev-parse --show-toplevel >/dev/null 2>&1; then
-    REPO_ROOT=$(git rev-parse --show-toplevel)
-    HAS_GIT=true
-else
-    REPO_ROOT="$(find_repo_root "$SCRIPT_DIR")"
-    if [ -z "$REPO_ROOT" ]; then
-        echo "Error: Could not determine repository root. Please run this script from within the repository." >&2
-        exit 1
-    fi
-    HAS_GIT=false
-fi
-
+REPO_ROOT="$(cd "$SCRIPT_DIR/../../.." && pwd)"
 cd "$REPO_ROOT"
 
-SPECS_DIR="$REPO_ROOT/specs"
-mkdir -p "$SPECS_DIR"
+# Generate branch name from feature description
+# Convert to lowercase, replace spaces/special chars with hyphens, limit length
+BRANCH_NAME=$(echo "$FEATURE_DESC" | \
+    tr '[:upper:]' '[:lower:]' | \
+    sed 's/[^a-z0-9]/-/g' | \
+    sed 's/--*/-/g' | \
+    sed 's/^-//;s/-$//' | \
+    cut -c1-50)
 
-HIGHEST=0
-if [ -d "$SPECS_DIR" ]; then
-    for dir in "$SPECS_DIR"/*; do
-        [ -d "$dir" ] || continue
-        dirname=$(basename "$dir")
-        number=$(echo "$dirname" | grep -o '^[0-9]\+' || echo "0")
-        number=$((10#$number))
-        if [ "$number" -gt "$HIGHEST" ]; then HIGHEST=$number; fi
-    done
-fi
+# Add feature/ prefix
+BRANCH_NAME="feature/${BRANCH_NAME}"
 
-NEXT=$((HIGHEST + 1))
-FEATURE_NUM=$(printf "%03d" "$NEXT")
+# Create feature directory structure
+FEATURE_DIR="${REPO_ROOT}/.specify/features/${BRANCH_NAME#feature/}"
+SPEC_FILE="${FEATURE_DIR}/spec.md"
+PLAN_FILE="${FEATURE_DIR}/plan.md"
+TASKS_FILE="${FEATURE_DIR}/tasks.md"
+CHECKLIST_DIR="${FEATURE_DIR}/checklists"
 
-BRANCH_NAME=$(echo "$FEATURE_DESCRIPTION" | tr '[:upper:]' '[:lower:]' | sed 's/[^a-z0-9]/-/g' | sed 's/-\+/-/g' | sed 's/^-//' | sed 's/-$//')
-WORDS=$(echo "$BRANCH_NAME" | tr '-' '\n' | grep -v '^$' | head -3 | tr '\n' '-' | sed 's/-$//')
-BRANCH_NAME="${FEATURE_NUM}-${WORDS}"
-
-if [ "$HAS_GIT" = true ]; then
-    git checkout -b "$BRANCH_NAME"
-else
-    >&2 echo "[specify] Warning: Git repository not detected; skipped branch creation for $BRANCH_NAME"
-fi
-
-FEATURE_DIR="$SPECS_DIR/$BRANCH_NAME"
+# Create directories
 mkdir -p "$FEATURE_DIR"
+mkdir -p "$CHECKLIST_DIR"
 
-TEMPLATE="$REPO_ROOT/.specify/templates/spec-template.md"
-SPEC_FILE="$FEATURE_DIR/spec.md"
-if [ -f "$TEMPLATE" ]; then cp "$TEMPLATE" "$SPEC_FILE"; else touch "$SPEC_FILE"; fi
+# Initialize spec file with header
+cat > "$SPEC_FILE" << 'EOF'
+# Feature Specification: [FEATURE_NAME]
 
-# Set the SPECIFY_FEATURE environment variable for the current session
-export SPECIFY_FEATURE="$BRANCH_NAME"
+**Version:** 0.1
+**Last Updated:** [DATE]
+**Status:** Draft
 
-if $JSON_MODE; then
-    printf '{"BRANCH_NAME":"%s","SPEC_FILE":"%s","FEATURE_NUM":"%s"}\n' "$BRANCH_NAME" "$SPEC_FILE" "$FEATURE_NUM"
+[Feature description goes here]
+
+---
+EOF
+
+# Create or checkout branch
+CURRENT_BRANCH=$(git branch --show-current 2>/dev/null || echo "main")
+if git show-ref --verify --quiet "refs/heads/${BRANCH_NAME}"; then
+    # Branch exists, check it out
+    git checkout "$BRANCH_NAME" 2>/dev/null || true
 else
-    echo "BRANCH_NAME: $BRANCH_NAME"
-    echo "SPEC_FILE: $SPEC_FILE"
-    echo "FEATURE_NUM: $FEATURE_NUM"
-    echo "SPECIFY_FEATURE environment variable set to: $BRANCH_NAME"
+    # Create new branch
+    git checkout -b "$BRANCH_NAME" 2>/dev/null || true
 fi
+
+# Output results
+if [[ "$JSON_OUTPUT" == true ]]; then
+    cat <<EOF
+{
+  "status": "success",
+  "branch_name": "${BRANCH_NAME}",
+  "spec_file": "${SPEC_FILE}",
+  "plan_file": "${PLAN_FILE}",
+  "tasks_file": "${TASKS_FILE}",
+  "feature_dir": "${FEATURE_DIR}",
+  "checklist_dir": "${CHECKLIST_DIR}"
+}
+EOF
+else
+    echo "Feature branch created: $BRANCH_NAME"
+    echo "Spec file: $SPEC_FILE"
+    echo "Plan file: $PLAN_FILE"
+    echo "Tasks file: $TASKS_FILE"
+fi
+
+exit 0
