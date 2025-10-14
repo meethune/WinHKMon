@@ -18,16 +18,20 @@
 // Link against PDH library
 #pragma comment(lib, "pdh.lib")
 
-namespace {
-    /**
-     * @brief Disk space information
-     */
-    struct DiskSpaceInfo {
-        uint64_t totalBytes;
-        uint64_t freeBytes;
-        uint64_t usedBytes;
-    };
+namespace WinHKMon {
 
+/**
+ * @brief Disk space information
+ */
+struct DiskSpaceInfo {
+    uint64_t totalBytes;
+    uint64_t freeBytes;
+    uint64_t usedBytes;
+};
+
+}  // namespace WinHKMon
+
+namespace {
     /**
      * Extract user-friendly disk name from PDH disk name
      * PDH format: "0 C:", "1 D:", "_Total"

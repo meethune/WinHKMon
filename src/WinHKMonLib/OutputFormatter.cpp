@@ -257,6 +257,9 @@ std::string formatText(const SystemMetrics& metrics, bool singleLine, const CliO
 }
 
 std::string formatJson(const SystemMetrics& metrics, const CliOptions& options) {
+    // Note: options parameter is for API consistency; JSON always includes all available fields
+    (void)options;
+    
     std::ostringstream json;
     json << std::fixed << std::setprecision(1);
     
