@@ -45,7 +45,8 @@ TEST(CliParserTest, ParsesSingleMetric) {
     
     EXPECT_TRUE(opts.showCpu);
     EXPECT_FALSE(opts.showMemory);
-    EXPECT_FALSE(opts.showDisk);
+    EXPECT_FALSE(opts.showDiskSpace);
+    EXPECT_FALSE(opts.showDiskIO);
     EXPECT_FALSE(opts.showNetwork);
     EXPECT_FALSE(opts.showTemp);
 }
@@ -56,7 +57,8 @@ TEST(CliParserTest, ParsesMultipleMetrics) {
     
     EXPECT_TRUE(opts.showCpu);
     EXPECT_TRUE(opts.showMemory);
-    EXPECT_FALSE(opts.showDisk);
+    EXPECT_FALSE(opts.showDiskSpace);
+    EXPECT_FALSE(opts.showDiskIO);
     EXPECT_TRUE(opts.showNetwork);
     EXPECT_FALSE(opts.showTemp);
 }
@@ -67,14 +69,26 @@ TEST(CliParserTest, MetricsAreCaseInsensitive) {
     
     EXPECT_TRUE(opts.showCpu);
     EXPECT_TRUE(opts.showMemory);
-    EXPECT_TRUE(opts.showDisk);
+    EXPECT_TRUE(opts.showDiskSpace);
+    EXPECT_FALSE(opts.showDiskIO);
 }
 
-TEST(CliParserTest, IOAliasForDisk) {
-    ArgvHelper args({"WinHKMon", "IO"});
-    CliOptions opts = parseArguments(args.argc(), args.argv());
+// Test DISK vs IO separation
+TEST(CliParserTest, DiskAndIOAreSeparateMetrics) {
+    ArgvHelper argsDisk({"WinHKMon", "DISK"});
+    CliOptions optsDisk = parseArguments(argsDisk.argc(), argsDisk.argv());
+    EXPECT_TRUE(optsDisk.showDiskSpace);
+    EXPECT_FALSE(optsDisk.showDiskIO);
     
-    EXPECT_TRUE(opts.showDisk);
+    ArgvHelper argsIO({"WinHKMon", "IO"});
+    CliOptions optsIO = parseArguments(argsIO.argc(), argsIO.argv());
+    EXPECT_FALSE(optsIO.showDiskSpace);
+    EXPECT_TRUE(optsIO.showDiskIO);
+    
+    ArgvHelper argsBoth({"WinHKMon", "DISK", "IO"});
+    CliOptions optsBoth = parseArguments(argsBoth.argc(), argsBoth.argv());
+    EXPECT_TRUE(optsBoth.showDiskSpace);
+    EXPECT_TRUE(optsBoth.showDiskIO);
 }
 
 // Test format flag parsing
