@@ -178,6 +178,78 @@ jobs:
           
           Write-Host "✅ Checksums generated"
 
+      - name: Generate Release Notes
+        shell: bash
+        run: |
+          VERSION="${{ env.VERSION }}"
+          RELEASE_NOTES="release-notes.md"
+          
+          echo "## WinHKMon $VERSION" > $RELEASE_NOTES
+          echo "" >> $RELEASE_NOTES
+          
+          # Try to extract tag annotation message
+          if git tag -l --format='%(contents)' "$VERSION" | grep -q .; then
+            echo "### 📝 Release Notes" >> $RELEASE_NOTES
+            echo "" >> $RELEASE_NOTES
+            git tag -l --format='%(contents)' "$VERSION" >> $RELEASE_NOTES
+            echo "" >> $RELEASE_NOTES
+            echo "---" >> $RELEASE_NOTES
+            echo "" >> $RELEASE_NOTES
+          fi
+          
+          # Try to extract from CHANGELOG.md
+          if [ -f "CHANGELOG.md" ]; then
+            # Extract section for this version
+            sed -n "/^## \[${VERSION#v}\]/,/^## \[/p" CHANGELOG.md | sed '$d' > changelog_section.txt
+            if [ -s changelog_section.txt ]; then
+              echo "### 📋 Changelog" >> $RELEASE_NOTES
+              echo "" >> $RELEASE_NOTES
+              cat changelog_section.txt >> $RELEASE_NOTES
+              echo "" >> $RELEASE_NOTES
+              echo "---" >> $RELEASE_NOTES
+              echo "" >> $RELEASE_NOTES
+            fi
+            rm -f changelog_section.txt
+          fi
+          
+          # Add standard package information
+          cat >> $RELEASE_NOTES << 'EOF'
+          ### 📦 Release Package
+          
+          This release includes:
+          - `WinHKMon.exe` - Main executable
+          - `README.md` - Documentation
+          - `LICENSE` - License information
+          - `BUILD_INFO.txt` - Build details
+          
+          ### 🖥️ Platform Support
+          - **Architecture:** ${{ matrix.architecture }}
+          - **OS:** Windows 10 21H2+ / Windows 11
+          - **Compiler:** MSVC 17.0 (Visual Studio 2022)
+          
+          ### ✅ Quality Assurance
+          - All 123 tests passed
+          - Performance validated (< 1% CPU overhead)
+          - Memory footprint < 10 MB
+          
+          ### 📝 Installation
+          
+          1. Download `WinHKMon-${{ env.VERSION }}-${{ matrix.architecture }}.zip`
+          2. Verify checksums (optional but recommended)
+          3. Extract to desired location
+          4. Run `WinHKMon.exe --help` to get started
+          
+          ### 🔒 Security
+          
+          See checksums file for SHA256/SHA512 hashes to verify download integrity.
+          
+          ---
+          
+          **Full Changelog:** https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
+          EOF
+          
+          echo "✅ Release notes generated"
+
       - name: Create GitHub Release
         if: |
           (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
@@ -185,44 +257,10 @@ jobs:
         uses: softprops/action-gh-release@v1
         with:
           tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
+          body_path: release-notes.md
           files: |
             ${{ env.PACKAGE_NAME }}.zip
             ${{ env.PACKAGE_NAME }}-checksums.txt
-          body: |
-            ## WinHKMon ${{ env.VERSION }}
-            
-            ### 📦 Release Package
-            
-            This release includes:
-            - `WinHKMon.exe` - Main executable
-            - `README.md` - Documentation
-            - `LICENSE` - License information
-            - `BUILD_INFO.txt` - Build details
-            
-            ### 🖥️ Platform Support
-            - **Architecture:** ${{ matrix.architecture }}
-            - **OS:** Windows 10 21H2+ / Windows 11
-            - **Compiler:** MSVC 17.0 (Visual Studio 2022)
-            
-            ### ✅ Quality Assurance
-            - All 123 tests passed
-            - Performance validated (< 1% CPU overhead)
-            - Memory footprint < 10 MB
-            
-            ### 📝 Installation
-            
-            1. Download `WinHKMon-${{ env.VERSION }}-${{ matrix.architecture }}.zip`
-            2. Verify checksums (optional but recommended)
-            3. Extract to desired location
-            4. Run `WinHKMon.exe --help` to get started
-            
-            ### 🔒 Security
-            
-            See checksums file for SHA256/SHA512 hashes to verify download integrity.
-            
-            ---
-            
-            **Full Changelog:** https://github.com/${{ github.repository }}/blob/main/CHANGELOG.md
           draft: false
           prerelease: ${{ contains(github.ref_name, 'beta') || contains(github.ref_name, 'alpha') || contains(github.ref_name, 'rc') }}
         env:
