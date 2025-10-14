@@ -1,10 +1,41 @@
 #include "WinHKMonLib/CpuMonitor.h"
-#include <windows.h>
-#include <powerbase.h>
-#include <powrprof.h>
 #include <stdexcept>
 #include <algorithm>
 #include <numeric>
+#include <windows.h>
+#include <pdh.h>
+#include <winnt.h>
+#include <powerbase.h>
+
+// Define NTSTATUS if not already defined
+#ifndef NTSTATUS
+typedef LONG NTSTATUS;
+#endif
+
+// Manually define PROCESSOR_POWER_INFORMATION if not available
+#ifndef _PROCESSOR_POWER_INFORMATION
+typedef struct _PROCESSOR_POWER_INFORMATION {
+    ULONG Number;
+    ULONG MaxMhz;
+    ULONG CurrentMhz;
+    ULONG MhzLimit;
+    ULONG MaxIdleState;
+    ULONG CurrentIdleState;
+} PROCESSOR_POWER_INFORMATION, *PPROCESSOR_POWER_INFORMATION;
+#endif
+
+// Declare CallNtPowerInformation if not available
+extern "C" {
+    NTSTATUS WINAPI CallNtPowerInformation(
+        POWER_INFORMATION_LEVEL InformationLevel,
+        PVOID InputBuffer,
+        ULONG InputBufferLength,
+        PVOID OutputBuffer,
+        ULONG OutputBufferLength
+    );
+}
+
+#pragma comment(lib, "powrprof.lib")
 
 namespace WinHKMon {
 
