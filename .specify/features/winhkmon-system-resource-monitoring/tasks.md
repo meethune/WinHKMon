@@ -432,6 +432,14 @@ These components are prerequisites for ALL user stories and must complete before
 - [X] Integration tests pass (requires Windows testing)
 - [X] Ready for US2 features
 
+**Constitutional Compliance Verification:**
+- [X] **Principle 1 - Library-First**: Core monitoring logic in WinHKMonLib with zero UI dependencies
+- [X] **Principle 2 - Native APIs**: Only Windows SDK APIs used (no forbidden dependencies)
+- [X] **Principle 3 - CLI-First**: Command-line interface provides complete functionality
+- [X] **Principle 4 - Test-First**: Tests written before implementation, 80%+ coverage achieved
+- [X] **Principle 5 - Simplicity**: Code follows direct, minimal design without over-abstraction
+- [X] **Principle 6 - Integration-First**: Real Windows API testing completed, validated against Task Manager
+
 **Deliverable**: Fully functional basic system monitor (CPU + RAM)
 **Estimated Duration**: 1.5 weeks
 **Status**: ✅ COMPLETED (requires Windows build and testing for validation)
@@ -823,11 +831,17 @@ These components are prerequisites for ALL user stories and must complete before
   - Sample collection < 50ms
   - CPU overhead < 1% (< 0.5% target)
   - Memory footprint < 10 MB
+  - **Disk I/O < 1 KB/sec average (NFR-1.3)**
+- [ ] Verify state file I/O during continuous monitoring:
+  - Measure bytes written per second to state file
+  - Test with 1-second interval over 60 seconds
+  - Confirm average write rate < 1 KB/sec
 - [ ] Document performance in README
 - [ ] Create performance regression tests
 
 **Acceptance Criteria:**
-- Meets all performance targets
+- Meets all performance targets including disk I/O constraint
+- State file I/O verified < 1 KB/sec during continuous monitoring
 - No performance regressions
 - Benchmarks documented
 - Profiling results archived
