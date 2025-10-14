@@ -6,11 +6,6 @@
  * and collect traffic statistics.
  */
 
-// Define Windows version for Vista+ APIs (GetIfTable2, MIB_IF_ROW2)
-#ifndef _WIN32_WINNT
-#define _WIN32_WINNT 0x0600  // Windows Vista
-#endif
-
 #include "WinHKMonLib/NetworkMonitor.h"
 #include <windows.h>
 #include <iphlpapi.h>

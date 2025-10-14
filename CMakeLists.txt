@@ -6,6 +6,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_CXX_EXTENSIONS OFF)
 
+# Windows version requirement (Vista+ for GetIfTable2, MIB_IF_ROW2 APIs)
+if(WIN32)
+    add_compile_definitions(_WIN32_WINNT=0x0600)  # Windows Vista
+endif()
+
 # MSVC-specific flags
 if(MSVC)
     # Warnings as errors, high warning level
