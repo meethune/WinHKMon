@@ -173,6 +173,11 @@ std::string formatText(const SystemMetrics& metrics, bool singleLine, const CliO
     // Disk Space (DISK metric)
     if (metrics.disks && options.showDiskSpace) {
         for (const auto& disk : *metrics.disks) {
+            // Skip _Total for disk space (it has no drive letter, so no space info)
+            if (disk.deviceName == "_Total") {
+                continue;
+            }
+            
             if (singleLine) {
                 output << "DISK:" << disk.deviceName << ":"
                        << formatBytes(disk.usedBytes) << "/"
