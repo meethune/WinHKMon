@@ -178,7 +178,7 @@ TEST_F(CpuMonitorTest, AverageFrequencyCalculatedCorrectly) {
     uint64_t expectedAvg = sum / stats.cores.size();
     
     // Should be within 10 MHz of calculated average (allow for rounding)
-    EXPECT_NEAR(stats.averageFrequencyMhz, expectedAvg, 10);
+    EXPECT_NEAR(static_cast<double>(stats.averageFrequencyMhz), static_cast<double>(expectedAvg), 10.0);
 }
 
 // Test 11: Usage under load increases (stress test)

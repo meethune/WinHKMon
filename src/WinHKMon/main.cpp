@@ -218,17 +218,17 @@ int continuousMode(const CliOptions& options) {
 int main(int argc, char* argv[]) {
     try {
         // Parse command-line arguments
-        CliOptions options = CliParser::parse(argc, argv);
+        CliOptions options = parseArguments(argc, argv);
         
         // Handle help
         if (options.showHelp) {
-            std::cout << CliParser::getHelpMessage() << std::endl;
+            std::cout << generateHelpMessage() << std::endl;
             return 0;
         }
         
         // Handle version
         if (options.showVersion) {
-            std::cout << CliParser::getVersionString() << std::endl;
+            std::cout << generateVersionString() << std::endl;
             return 0;
         }
         
