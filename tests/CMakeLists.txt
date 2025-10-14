@@ -19,6 +19,9 @@ add_executable(WinHKMonTests
     CliParserTest.cpp
     OutputFormatterTest.cpp
     StateManagerTest.cpp
+    MemoryMonitorTest.cpp
+    CpuMonitorTest.cpp
+    DeltaCalculatorTest.cpp
 )
 
 target_link_libraries(WinHKMonTests
