@@ -142,12 +142,8 @@ TEST_F(NetworkMonitorTest, ConnectionStatusDetection) {
     std::vector<InterfaceStats> interfaces = monitor.getCurrentStats();
     
     // At least one interface should typically be connected (or have status reported)
-    bool hasConnectionInfo = false;
-    for (const auto& iface : interfaces) {
-        // Connection status should be a boolean (we can check it exists)
-        hasConnectionInfo = true;
-        // We don't enforce that at least one is connected, as tests may run in isolated environments
-    }
+    // We check that we can enumerate interfaces (connection status is part of InterfaceStats)
+    bool hasConnectionInfo = !interfaces.empty();
     
     EXPECT_TRUE(hasConnectionInfo) << "Connection status should be available for interfaces";
 }
