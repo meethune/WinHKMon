@@ -1,4 +1,5 @@
 # Visual Studio / MSVC
+.clangd
 *.user
 *.suo
 *.sdf
