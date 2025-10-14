@@ -11,12 +11,15 @@
 #define _WIN32_WINNT 0x0A00  // Windows 10
 #endif
 
+// Prevent winsock.h from being included by windows.h
+#define WIN32_LEAN_AND_MEAN
+#define _WINSOCKAPI_
+
 #include "WinHKMonLib/NetworkMonitor.h"
+#include <winsock2.h>   // Must come before windows.h
 #include <windows.h>
 #include <iphlpapi.h>
 #include <netioapi.h>
-#include <ws2def.h>
-#include <ws2ipdef.h>
 #include <stdexcept>
 #include <algorithm>
 #include <cstring>
