@@ -10,6 +10,11 @@ on:
         description: 'Version tag (e.g., v1.0.0)'
         required: true
         type: string
+      create_release:
+        description: 'Create GitHub Release?'
+        required: false
+        type: boolean
+        default: true
 
 permissions:
   contents: write
@@ -28,6 +33,7 @@ jobs:
       - name: Checkout Repository
         uses: actions/checkout@v4
         with:
+          ref: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref }}
           fetch-depth: 0
 
       - name: Setup CMake
@@ -173,9 +179,12 @@ jobs:
           Write-Host "✅ Checksums generated"
 
       - name: Create GitHub Release
-        if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+        if: |
+          (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+          (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
         uses: softprops/action-gh-release@v1
         with:
+          tag_name: ${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}
           files: |
             ${{ env.PACKAGE_NAME }}.zip
             ${{ env.PACKAGE_NAME }}-checksums.txt
@@ -224,13 +233,16 @@ jobs:
     name: Create Release Summary
     needs: build-and-release
     runs-on: ubuntu-latest
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')
+    if: |
+      (github.event_name == 'push' && startsWith(github.ref, 'refs/tags/')) ||
+      (github.event_name == 'workflow_dispatch' && github.event.inputs.create_release == 'true')
     
     steps:
       - name: Generate Release Summary
         run: |
+          VERSION="${{ github.event_name == 'workflow_dispatch' && github.event.inputs.version || github.ref_name }}"
           cat << EOF >> $GITHUB_STEP_SUMMARY
-          # 🎉 Release ${{ github.ref_name }} Published
+          # 🎉 Release $VERSION Published
           
           ## Build Status
           - ✅ x64 build completed and uploaded
@@ -248,6 +260,6 @@ jobs:
           - ✅ Checksums generated
           
           ---
-          **Release URL:** ${{ github.server_url }}/${{ github.repository }}/releases/tag/${{ github.ref_name }}
+          **Release URL:** ${{ github.server_url }}/${{ github.repository }}/releases/tag/$VERSION
           EOF
 
