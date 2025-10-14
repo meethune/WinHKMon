@@ -41,7 +41,6 @@ void DiskMonitor::initialize() {
     
     // Enumerate physical disk instances
     // We'll use wildcard (*) to get all physical disks
-    const wchar_t* counterPath = L"\\PhysicalDisk(*)\\Disk Read Bytes/sec";
     
     // Get list of instances
     DWORD bufferSize = 0;
@@ -84,7 +83,7 @@ void DiskMonitor::initialize() {
                 // Add counters for this instance
                 try {
                     addDiskCounters(instanceName);
-                } catch (const std::exception& e) {
+                } catch (const std::exception&) {
                     // Log error but continue with other disks
                     // In production, use proper logging
                 }
@@ -100,7 +99,7 @@ void DiskMonitor::initialize() {
         // Add _Total counter as fallback
         try {
             addDiskCounters("_Total");
-        } catch (const std::exception& e) {
+        } catch (const std::exception&) {
             // If even _Total fails, cleanup and throw
             cleanup();
             throw std::runtime_error("Failed to add any disk counters");
