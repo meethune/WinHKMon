@@ -319,7 +319,7 @@ int main(int argc, char* argv[]) {
         }
         
         // Check that at least one metric is requested
-        if (!options.showCpu && !options.showMemory && !options.showDisk && 
+        if (!options.showCpu && !options.showMemory && !options.showDiskSpace && !options.showDiskIO &&
             !options.showNetwork && !options.showTemp) {
             std::cerr << "[ERROR] No metrics specified. Use --help for usage information." << std::endl;
             return 1;
