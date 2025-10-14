@@ -37,7 +37,9 @@ void signalHandler(int signal) {
  * @param memoryMonitor Memory monitor instance
  * @param networkMonitor Network monitor instance (if initialized)
  * @param diskMonitor Disk monitor instance (if initialized)
- * @param deltaCalc Delta calculator for timestamps
+ * @param deltaCalc Delta calculator for timestamps and rates
+ * @param previousMetrics Previous sample metrics for delta calculations
+ * @param previousTimestamp Previous sample timestamp
  * @return SystemMetrics structure with requested metrics
  */
 SystemMetrics collectMetrics(const CliOptions& options, 
@@ -45,11 +47,18 @@ SystemMetrics collectMetrics(const CliOptions& options,
                              MemoryMonitor& memoryMonitor,
                              NetworkMonitor* networkMonitor,
                              DiskMonitor* diskMonitor,
-                             DeltaCalculator& deltaCalc) {
+                             DeltaCalculator& deltaCalc,
+                             const SystemMetrics& previousMetrics,
+                             uint64_t previousTimestamp) {
     SystemMetrics metrics;
     
     // Get timestamp
     metrics.timestamp = deltaCalc.getCurrentTimestamp();
+    
+    // Calculate elapsed time for rate calculations
+    uint64_t frequency = deltaCalc.getPerformanceFrequency();
+    double elapsedSeconds = deltaCalc.calculateElapsedSeconds(
+        metrics.timestamp, previousTimestamp, frequency);
     
     // Collect CPU stats
     if (options.showCpu && cpuMonitor != nullptr) {
@@ -69,10 +78,35 @@ SystemMetrics collectMetrics(const CliOptions& options,
         }
     }
     
-    // Collect network stats
+    // Collect network stats with rate calculations
     if (options.showNetwork && networkMonitor != nullptr) {
         try {
             std::vector<InterfaceStats> interfaces = networkMonitor->getCurrentStats();
+            
+            // Calculate rates for each interface
+            if (elapsedSeconds > 0 && previousMetrics.network.has_value()) {
+                for (auto& iface : interfaces) {
+                    // Find previous data for this interface
+                    auto prevIt = std::find_if(
+                        previousMetrics.network->begin(),
+                        previousMetrics.network->end(),
+                        [&iface](const InterfaceStats& prev) {
+                            return prev.name == iface.name;
+                        });
+                    
+                    if (prevIt != previousMetrics.network->end()) {
+                        // Calculate rates using DeltaCalculator
+                        iface.inBytesPerSec = static_cast<uint64_t>(
+                            deltaCalc.calculateRate(iface.totalInOctets, 
+                                                   prevIt->totalInOctets, 
+                                                   elapsedSeconds));
+                        iface.outBytesPerSec = static_cast<uint64_t>(
+                            deltaCalc.calculateRate(iface.totalOutOctets, 
+                                                    prevIt->totalOutOctets, 
+                                                    elapsedSeconds));
+                    }
+                }
+            }
             
             // Filter to specific interface if requested
             if (!options.networkInterface.empty()) {
@@ -95,10 +129,37 @@ SystemMetrics collectMetrics(const CliOptions& options,
         }
     }
     
-    // Collect disk stats (if either DISK or IO is requested)
+    // Collect disk stats (if either DISK or IO is requested) with rate calculations
     if ((options.showDiskSpace || options.showDiskIO) && diskMonitor != nullptr) {
         try {
-            metrics.disks = diskMonitor->getCurrentStats();
+            std::vector<DiskStats> disks = diskMonitor->getCurrentStats();
+            
+            // Calculate I/O rates for each disk
+            if (elapsedSeconds > 0 && previousMetrics.disks.has_value()) {
+                for (auto& disk : disks) {
+                    // Find previous data for this disk
+                    auto prevIt = std::find_if(
+                        previousMetrics.disks->begin(),
+                        previousMetrics.disks->end(),
+                        [&disk](const DiskStats& prev) {
+                            return prev.deviceName == disk.deviceName;
+                        });
+                    
+                    if (prevIt != previousMetrics.disks->end()) {
+                        // Calculate I/O rates using DeltaCalculator
+                        disk.bytesReadPerSec = static_cast<uint64_t>(
+                            deltaCalc.calculateRate(disk.totalBytesRead, 
+                                                   prevIt->totalBytesRead, 
+                                                   elapsedSeconds));
+                        disk.bytesWrittenPerSec = static_cast<uint64_t>(
+                            deltaCalc.calculateRate(disk.totalBytesWritten, 
+                                                    prevIt->totalBytesWritten, 
+                                                    elapsedSeconds));
+                    }
+                }
+            }
+            
+            metrics.disks = disks;
         } catch (const std::exception& e) {
             std::cerr << "[WARNING] Disk monitoring failed: " << e.what() << std::endl;
         }
@@ -125,6 +186,7 @@ int singleShotMode(const CliOptions& options) {
         NetworkMonitor* networkMonitor = nullptr;
         DiskMonitor* diskMonitor = nullptr;
         DeltaCalculator deltaCalc;
+        StateManager stateManager("WinHKMon");
         
         if (options.showCpu) {
             cpuMonitor = new CpuMonitor();
@@ -147,9 +209,21 @@ int singleShotMode(const CliOptions& options) {
             std::this_thread::sleep_for(std::chrono::milliseconds(1100));
         }
         
+        // Load previous state for delta calculations
+        SystemMetrics previousMetrics;
+        uint64_t previousTimestamp = 0;
+        if (!stateManager.load(previousMetrics, previousTimestamp)) {
+            // First run or corrupted state - use current timestamp as baseline
+            previousTimestamp = deltaCalc.getCurrentTimestamp();
+        }
+        
         // Collect metrics
         SystemMetrics metrics = collectMetrics(options, cpuMonitor, memoryMonitor, 
-                                               networkMonitor, diskMonitor, deltaCalc);
+                                               networkMonitor, diskMonitor, deltaCalc,
+                                               previousMetrics, previousTimestamp);
+        
+        // Save current state for next run
+        stateManager.save(metrics);
         
         // Format output
         std::string output;
@@ -236,12 +310,21 @@ int continuousMode(const CliOptions& options) {
             std::cout << formatCsv(dummyMetrics, true, options);
         }
         
+        // Load previous state for delta calculations
+        SystemMetrics previousMetrics;
+        uint64_t previousTimestamp = 0;
+        if (!stateManager.load(previousMetrics, previousTimestamp)) {
+            // First run or corrupted state - use current timestamp as baseline
+            previousTimestamp = deltaCalc.getCurrentTimestamp();
+        }
+        
         // Monitoring loop
         int sampleCount = 0;
         while (g_continueMonitoring) {
-            // Collect metrics
+            // Collect metrics with delta calculations
             SystemMetrics metrics = collectMetrics(options, cpuMonitor, memoryMonitor, 
-                                                   networkMonitor, diskMonitor, deltaCalc);
+                                                   networkMonitor, diskMonitor, deltaCalc,
+                                                   previousMetrics, previousTimestamp);
             
             // Format output
             std::string output;
@@ -266,6 +349,10 @@ int continuousMode(const CliOptions& options) {
             }
             std::cout.flush();
             
+            // Update previous metrics for next iteration
+            previousMetrics = metrics;
+            previousTimestamp = metrics.timestamp;
+            
             sampleCount++;
             
             // Wait for interval
@@ -274,6 +361,9 @@ int continuousMode(const CliOptions& options) {
                 std::this_thread::sleep_for(std::chrono::milliseconds(sleepMs));
             }
         }
+        
+        // Save final state
+        stateManager.save(previousMetrics);
         
         // Cleanup
         if (cpuMonitor != nullptr) {
