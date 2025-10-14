@@ -122,6 +122,16 @@ CpuStats CpuMonitor::getCurrentStats() {
         throw std::runtime_error("PdhCollectQueryData failed: " + std::to_string(status));
     }
 
+    // PDH requires a small delay between samples to calculate percentages
+    // Wait at least 100ms for accurate CPU percentage calculation
+    Sleep(100);
+
+    // Collect second sample for percentage calculation
+    status = PdhCollectQueryData(hQuery_);
+    if (status != ERROR_SUCCESS) {
+        throw std::runtime_error("PdhCollectQueryData (second sample) failed: " + std::to_string(status));
+    }
+
     // Get total CPU usage
     PDH_FMT_COUNTERVALUE counterValue;
     status = PdhGetFormattedCounterValue(hCpuTotal_, PDH_FMT_DOUBLE, nullptr, &counterValue);
