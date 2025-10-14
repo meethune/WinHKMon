@@ -146,14 +146,21 @@ CpuStats CpuMonitor::getCurrentStats() {
     // Get total CPU usage
     PDH_FMT_COUNTERVALUE counterValue;
     status = PdhGetFormattedCounterValue(hCpuTotal_, PDH_FMT_DOUBLE, nullptr, &counterValue);
-    if (status != ERROR_SUCCESS) {
+    
+    if (status == ERROR_SUCCESS) {
+        stats.totalUsagePercent = counterValue.doubleValue;
+        
+        // Clamp to valid range (PDH sometimes returns slightly > 100%)
+        if (stats.totalUsagePercent < 0.0) stats.totalUsagePercent = 0.0;
+        if (stats.totalUsagePercent > 100.0) stats.totalUsagePercent = 100.0;
+    } else if (status == PDH_INVALID_DATA || status == PDH_CALC_NEGATIVE_VALUE || 
+               status == PDH_CALC_NEGATIVE_DENOMINATOR) {
+        // Counter not ready yet - set to 0 and continue
+        stats.totalUsagePercent = 0.0;
+    } else {
+        // Other errors are fatal
         throw std::runtime_error("PdhGetFormattedCounterValue (total) failed: " + std::to_string(status));
     }
-    stats.totalUsagePercent = counterValue.doubleValue;
-
-    // Clamp to valid range (PDH sometimes returns slightly > 100%)
-    if (stats.totalUsagePercent < 0.0) stats.totalUsagePercent = 0.0;
-    if (stats.totalUsagePercent > 100.0) stats.totalUsagePercent = 100.0;
 
     // Get per-core usage
     stats.cores.resize(coreCount_);
