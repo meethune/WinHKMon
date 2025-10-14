@@ -129,12 +129,15 @@ SystemMetrics collectMetrics(const CliOptions& options,
         }
     }
     
-    // Collect disk stats (if either DISK or IO is requested) with rate calculations
+    // Collect disk stats (if either DISK or IO is requested)
+    // NOTE: Disk I/O rates come directly from PDH counters (already calculated)
+    // Unlike network (which provides cumulative counters), PDH provides instantaneous rates
     if ((options.showDiskSpace || options.showDiskIO) && diskMonitor != nullptr) {
         try {
             std::vector<DiskStats> disks = diskMonitor->getCurrentStats();
             
-            // Calculate I/O rates for each disk
+            // PDH already provides bytesReadPerSec and bytesWrittenPerSec
+            // We only need to accumulate totalBytesRead/totalBytesWritten for historical tracking
             if (elapsedSeconds > 0 && previousMetrics.disks.has_value()) {
                 for (auto& disk : disks) {
                     // Find previous data for this disk
@@ -146,16 +149,13 @@ SystemMetrics collectMetrics(const CliOptions& options,
                         });
                     
                     if (prevIt != previousMetrics.disks->end()) {
-                        // Calculate I/O rates using DeltaCalculator
-                        disk.bytesReadPerSec = static_cast<uint64_t>(
-                            deltaCalc.calculateRate(disk.totalBytesRead, 
-                                                   prevIt->totalBytesRead, 
-                                                   elapsedSeconds));
-                        disk.bytesWrittenPerSec = static_cast<uint64_t>(
-                            deltaCalc.calculateRate(disk.totalBytesWritten, 
-                                                    prevIt->totalBytesWritten, 
-                                                    elapsedSeconds));
+                        // Accumulate cumulative totals (integrate rates over time)
+                        disk.totalBytesRead = prevIt->totalBytesRead + 
+                            static_cast<uint64_t>(disk.bytesReadPerSec * elapsedSeconds);
+                        disk.totalBytesWritten = prevIt->totalBytesWritten + 
+                            static_cast<uint64_t>(disk.bytesWrittenPerSec * elapsedSeconds);
                     }
+                    // NOTE: bytesReadPerSec and bytesWrittenPerSec are already set by DiskMonitor from PDH
                 }
             }
             
