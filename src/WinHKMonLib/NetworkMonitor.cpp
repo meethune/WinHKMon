@@ -10,22 +10,31 @@
 #ifndef _WIN32_WINNT
 #define _WIN32_WINNT 0x0A00  // Windows 10
 #endif
+#ifndef NTDDI_VERSION
+#define NTDDI_VERSION 0x0A000000  // Windows 10
+#endif
 
-// Prevent winsock.h from being included by windows.h
-#define WIN32_LEAN_AND_MEAN
+// Prevent old winsock.h from being included
 #define _WINSOCKAPI_
 
 #include "WinHKMonLib/NetworkMonitor.h"
-#include <winsock2.h>   // Must come before windows.h
+
+// Include Winsock 2 headers BEFORE windows.h
+#include <winsock2.h>
+#include <ws2tcpip.h>
+
+// Now include Windows headers
 #include <windows.h>
 #include <iphlpapi.h>
 #include <netioapi.h>
+
 #include <stdexcept>
 #include <algorithm>
 #include <cstring>
 
-// Link against IP Helper API
+// Link against IP Helper API and Winsock
 #pragma comment(lib, "iphlpapi.lib")
+#pragma comment(lib, "ws2_32.lib")
 
 namespace WinHKMon {
 
