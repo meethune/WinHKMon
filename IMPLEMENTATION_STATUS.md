@@ -2,13 +2,31 @@
 
 **Date**: 2025-10-14  
 **Status**: Phase 4 Complete - US2 Comprehensive Monitoring (CHECKPOINT 4 ✅)  
-**Build Status**: ✅ **ALL 123 TESTS PASSING** on Windows 10/11 (MSVC 17.14)
+**Build Status**: ✅ **ALL 123 TESTS PASSING** on Windows 10/11 (MSVC 17.14)  
+**Spec Status**: ✅ **SPECIFICATIONS UPDATED** to reflect implementation (commit 6da2db0)
+
+## Recent Updates (2025-10-14 Evening)
+
+### Specification Documentation Updated
+Following completion of Phase 4, all specification documents have been updated to reflect the actual implementation:
+
+**Updated Documents:**
+- `spec.md`: Updated FR-3, FR-6, FR-8, NFR-5 to document DISK/IO separation and ASCII symbols
+- `data-model.md`: Updated DiskStats and CliOptions structures
+- `plan.md`: Updated DiskMonitor design, CLI options, and output formats
+- `tasks.md`: Marked T014 and T015 as COMPLETED with detailed achievements
+
+**Key Documentation Changes:**
+1. **DISK/IO Separation**: Documented that DISK shows disk space (like `df`) and IO shows I/O rates (like `iostat`)
+2. **ASCII Symbols**: Changed from UTF-8 arrows (↓↑) to ASCII (`<`, `>`) for Windows console compatibility
+3. **Drive Letters**: Clarified that disk names are drive letters ("C:", "D:") extracted from PDH counter names
+4. **_Total Handling**: Documented that "_Total" shows 0 for space fields but aggregates I/O statistics
 
 ## Executive Summary
 
-Successfully completed **Phase 4 (US2 - Comprehensive Monitoring)** of the WinHKMon implementation. User stories US1 and US2 are now complete with CPU, RAM, Network, and Disk monitoring fully implemented, including comprehensive tests, main CLI application, and full integration support.
+Successfully completed **Phase 4 (US2 - Comprehensive Monitoring)** of the WinHKMon implementation. User stories US1 and US2 are now complete with CPU, RAM, Network, and Disk monitoring (both space and I/O) fully implemented, including comprehensive tests, main CLI application, and full integration support.
 
-**Key Achievement**: Comprehensive system monitoring is complete with CPU, RAM, Disk, and Network support, ready for Windows build and testing.
+**Key Achievement**: Comprehensive system monitoring is complete with CPU, RAM, Disk Space, Disk I/O, and Network support, with specifications fully aligned with implementation.
 
 ---
 
