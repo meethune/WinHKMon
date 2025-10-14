@@ -1,6 +1,6 @@
 # WinHKMon - Windows Hardware Monitor
 
-[![License](https://img.shields.io/badge/license-TBD-blue.svg)](LICENSE)
+[![License](https://img.shields.io/badge/license-%20%20GNU%20GPLv3%20-green.svg)](LICENSE)
 [![Windows](https://img.shields.io/badge/platform-Windows%2010%2B-blue.svg)](https://www.microsoft.com/windows)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
 [![Build](https://img.shields.io/badge/build-ready-brightgreen.svg)](#build-status)
