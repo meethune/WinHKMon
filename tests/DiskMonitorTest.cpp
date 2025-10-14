@@ -68,9 +68,9 @@ TEST_F(DiskMonitorTest, GetCurrentStatsReturnsDiskList) {
 TEST_F(DiskMonitorTest, PhysicalDisksEnumerated) {
     std::vector<DiskStats> disks = monitor.getCurrentStats();
     
-    // Physical disks typically have names like "0 C:", "1 D:", or "_Total"
+    // Physical disks have names like "C:", "D:", or "_Total"
     for (const auto& disk : disks) {
-        // Device name should not be a single letter (which would indicate partition only)
+        // Device name should not be a single letter (drive letter should include colon)
         EXPECT_GT(disk.deviceName.length(), 1) 
             << "Disk name should be more than a single character: " << disk.deviceName;
     }

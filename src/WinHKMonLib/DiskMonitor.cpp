@@ -18,6 +18,30 @@
 // Link against PDH library
 #pragma comment(lib, "pdh.lib")
 
+namespace {
+    /**
+     * Extract user-friendly disk name from PDH disk name
+     * PDH format: "0 C:", "1 D:", "_Total"
+     * Extract to: "C:", "D:", "_Total"
+     */
+    std::string extractFriendlyDiskName(const std::string& pdhDiskName) {
+        // Keep "_Total" as is
+        if (pdhDiskName == "_Total") {
+            return pdhDiskName;
+        }
+        
+        // Find the first letter after a space (the drive letter)
+        size_t spacePos = pdhDiskName.find(' ');
+        if (spacePos != std::string::npos && spacePos + 1 < pdhDiskName.length()) {
+            // Return everything after the space (drive letter and colon)
+            return pdhDiskName.substr(spacePos + 1);
+        }
+        
+        // If format is unexpected, return as-is
+        return pdhDiskName;
+    }
+}
+
 namespace WinHKMon {
 
 DiskMonitor::DiskMonitor() 
@@ -138,7 +162,7 @@ std::vector<DiskStats> DiskMonitor::getCurrentStats() {
     // Retrieve formatted values for each disk
     for (const auto& [diskName, counters] : counters_) {
         DiskStats stats;
-        stats.deviceName = diskName;
+        stats.deviceName = extractFriendlyDiskName(diskName);
         
         // Get read rate
         PDH_FMT_COUNTERVALUE readValue;
