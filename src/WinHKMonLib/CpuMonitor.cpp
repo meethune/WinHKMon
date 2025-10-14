@@ -1,5 +1,7 @@
 #include "WinHKMonLib/CpuMonitor.h"
+#include <windows.h>
 #include <powerbase.h>
+#include <powrprof.h>
 #include <stdexcept>
 #include <algorithm>
 #include <numeric>
