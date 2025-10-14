@@ -4,6 +4,17 @@
 
 using namespace WinHKMon;
 
+// Helper to create default CLI options for testing
+CliOptions createDefaultOptions() {
+    CliOptions opts;
+    opts.showCpu = true;
+    opts.showMemory = true;
+    opts.showDiskSpace = true;  // Show disk space by default in tests
+    opts.showDiskIO = true;     // Show disk I/O by default in tests
+    opts.showNetwork = true;
+    return opts;
+}
+
 // Helper to create sample metrics
 SystemMetrics createSampleMetrics() {
     SystemMetrics metrics;
@@ -35,7 +46,7 @@ SystemMetrics createSampleMetrics() {
 // Test text format generation
 TEST(OutputFormatterTest, FormatTextCompact) {
     SystemMetrics metrics = createSampleMetrics();
-    std::string output = formatText(metrics, false);
+    std::string output = formatText(metrics, false, createDefaultOptions());
     
     EXPECT_NE(output.find("CPU:"), std::string::npos);
     EXPECT_NE(output.find("23.5"), std::string::npos);
@@ -46,7 +57,7 @@ TEST(OutputFormatterTest, FormatTextCompact) {
 
 TEST(OutputFormatterTest, FormatTextSingleLine) {
     SystemMetrics metrics = createSampleMetrics();
-    std::string output = formatText(metrics, true);
+    std::string output = formatText(metrics, true, createDefaultOptions());
     
     // Single line should not contain newlines (except trailing)
     size_t newlineCount = 0;
@@ -65,7 +76,7 @@ TEST(OutputFormatterTest, HandlesOptionalMetrics) {
     cpu.averageFrequencyMhz = 2400;
     metrics.cpu = cpu;
     
-    std::string output = formatText(metrics, false);
+    std::string output = formatText(metrics, false, createDefaultOptions());
     
     EXPECT_NE(output.find("CPU:"), std::string::npos);
     EXPECT_EQ(output.find("RAM:"), std::string::npos);  // RAM should not appear
@@ -74,7 +85,7 @@ TEST(OutputFormatterTest, HandlesOptionalMetrics) {
 // Test JSON format generation
 TEST(OutputFormatterTest, FormatJsonValidStructure) {
     SystemMetrics metrics = createSampleMetrics();
-    std::string json = formatJson(metrics);
+    std::string json = formatJson(metrics, createDefaultOptions());
     
     EXPECT_NE(json.find("\"schemaVersion\""), std::string::npos);
     EXPECT_NE(json.find("\"timestamp\""), std::string::npos);
@@ -85,7 +96,7 @@ TEST(OutputFormatterTest, FormatJsonValidStructure) {
 
 TEST(OutputFormatterTest, FormatJsonValidJson) {
     SystemMetrics metrics = createSampleMetrics();
-    std::string json = formatJson(metrics);
+    std::string json = formatJson(metrics, createDefaultOptions());
     
     // Basic JSON validation: balanced braces
     int braceCount = 0;
@@ -108,7 +119,7 @@ TEST(OutputFormatterTest, FormatJsonOptionalMetrics) {
     cpu.averageFrequencyMhz = 2400;
     metrics.cpu = cpu;
     
-    std::string json = formatJson(metrics);
+    std::string json = formatJson(metrics, createDefaultOptions());
     
     EXPECT_NE(json.find("\"cpu\""), std::string::npos);
     EXPECT_EQ(json.find("\"memory\""), std::string::npos);  // No memory field
@@ -132,7 +143,7 @@ TEST(OutputFormatterTest, FormatJsonEscapesStrings) {
     interfaces.push_back(iface);
     metrics.network = interfaces;
     
-    std::string json = formatJson(metrics);
+    std::string json = formatJson(metrics, createDefaultOptions());
     
     // Should escape quotes and backslashes
     EXPECT_NE(json.find("\\\"Test\\\""), std::string::npos);
@@ -142,7 +153,7 @@ TEST(OutputFormatterTest, FormatJsonEscapesStrings) {
 // Test CSV format generation
 TEST(OutputFormatterTest, FormatCsvWithHeader) {
     SystemMetrics metrics = createSampleMetrics();
-    std::string csv = formatCsv(metrics, true);
+    std::string csv = formatCsv(metrics, true, createDefaultOptions());
     
     EXPECT_NE(csv.find("timestamp"), std::string::npos);
     EXPECT_NE(csv.find("cpu_percent"), std::string::npos);
@@ -152,7 +163,7 @@ TEST(OutputFormatterTest, FormatCsvWithHeader) {
 
 TEST(OutputFormatterTest, FormatCsvWithoutHeader) {
     SystemMetrics metrics = createSampleMetrics();
-    std::string csv = formatCsv(metrics, false);
+    std::string csv = formatCsv(metrics, false, createDefaultOptions());
     
     // Should not contain header field names
     EXPECT_EQ(csv.find("timestamp"), std::string::npos);
@@ -172,6 +183,8 @@ TEST(OutputFormatterTest, FormatCsvHandlesCommas) {
     DiskStats disk;
     disk.deviceName = "0 C:, System";
     disk.totalSizeBytes = 1000000000000;
+    disk.usedBytes = 600000000000;   // 600 GB used
+    disk.freeBytes = 400000000000;   // 400 GB free
     disk.bytesReadPerSec = 1000000;
     disk.bytesWrittenPerSec = 500000;
     disk.percentBusy = 25.5;
@@ -180,7 +193,7 @@ TEST(OutputFormatterTest, FormatCsvHandlesCommas) {
     disks.push_back(disk);
     metrics.disks = disks;
     
-    std::string csv = formatCsv(metrics, true);
+    std::string csv = formatCsv(metrics, true, createDefaultOptions());
     
     // Name with comma should be quoted
     EXPECT_NE(csv.find("\"0 C:, System\""), std::string::npos);
@@ -189,8 +202,8 @@ TEST(OutputFormatterTest, FormatCsvHandlesCommas) {
 TEST(OutputFormatterTest, FormatCsvMultipleRows) {
     SystemMetrics metrics = createSampleMetrics();
     
-    std::string row1 = formatCsv(metrics, true);   // With header
-    std::string row2 = formatCsv(metrics, false);  // Without header
+    std::string row1 = formatCsv(metrics, true, createDefaultOptions());   // With header
+    std::string row2 = formatCsv(metrics, false, createDefaultOptions());  // Without header
     
     // Row 1 should have more lines than row 2
     size_t lines1 = std::count(row1.begin(), row1.end(), '\n');
@@ -215,7 +228,7 @@ TEST(OutputFormatterTest, TextUsesUnicodeSymbols) {
     interfaces.push_back(iface);
     metrics.network = interfaces;
     
-    std::string output = formatText(metrics, false);
+    std::string output = formatText(metrics, false, createDefaultOptions());
     
     // Should contain < and > direction indicators (ASCII-safe for Windows console)
     bool hasDirectionIndicators = (output.find("<") != std::string::npos && 
@@ -229,9 +242,9 @@ TEST(OutputFormatterTest, HandlesEmptyMetrics) {
     SystemMetrics metrics;
     metrics.timestamp = 1000000;
     
-    std::string text = formatText(metrics, false);
-    std::string json = formatJson(metrics);
-    std::string csv = formatCsv(metrics, true);
+    std::string text = formatText(metrics, false, createDefaultOptions());
+    std::string json = formatJson(metrics, createDefaultOptions());
+    std::string csv = formatCsv(metrics, true, createDefaultOptions());
     
     // Should not crash and should produce valid (though minimal) output
     EXPECT_FALSE(text.empty());
