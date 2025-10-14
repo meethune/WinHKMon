@@ -98,11 +98,11 @@ int singleShotMode(const CliOptions& options) {
         // Format output
         std::string output;
         if (options.format == OutputFormat::JSON) {
-            output = OutputFormatter::formatJson(metrics);
+            output = formatJson(metrics);
         } else if (options.format == OutputFormat::CSV) {
-            output = OutputFormatter::formatCsv(metrics, true);  // Include header
+            output = formatCsv(metrics, true);  // Include header
         } else {
-            output = OutputFormatter::formatText(metrics, options.singleLine);
+            output = formatText(metrics, options.singleLine);
         }
         
         // Output to stdout
@@ -155,7 +155,7 @@ int continuousMode(const CliOptions& options) {
         // For CSV, output header once
         if (options.format == OutputFormat::CSV) {
             SystemMetrics dummyMetrics;
-            std::cout << OutputFormatter::formatCsv(dummyMetrics, true);
+            std::cout << formatCsv(dummyMetrics, true);
         }
         
         // Monitoring loop
@@ -167,9 +167,9 @@ int continuousMode(const CliOptions& options) {
             // Format output
             std::string output;
             if (options.format == OutputFormat::JSON) {
-                output = OutputFormatter::formatJson(metrics);
+                output = formatJson(metrics);
             } else if (options.format == OutputFormat::CSV) {
-                output = OutputFormatter::formatCsv(metrics, false);  // No header
+                output = formatCsv(metrics, false);  // No header
             } else {
                 // For text mode in continuous, optionally clear screen
                 if (sampleCount > 0 && !options.singleLine) {
@@ -177,7 +177,7 @@ int continuousMode(const CliOptions& options) {
                     // (simple version - could use Windows console API for better control)
                     std::cout << "\n";
                 }
-                output = OutputFormatter::formatText(metrics, options.singleLine);
+                output = formatText(metrics, options.singleLine);
             }
             
             // Output to stdout
