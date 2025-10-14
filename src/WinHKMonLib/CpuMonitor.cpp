@@ -24,6 +24,17 @@ typedef struct _PROCESSOR_POWER_INFORMATION {
 } PROCESSOR_POWER_INFORMATION, *PPROCESSOR_POWER_INFORMATION;
 #endif
 
+// Define PDH error codes if not available
+#ifndef PDH_INVALID_DATA
+#define PDH_INVALID_DATA ((PDH_STATUS)0xC0000BC6L)
+#endif
+#ifndef PDH_CALC_NEGATIVE_VALUE
+#define PDH_CALC_NEGATIVE_VALUE ((PDH_STATUS)0x800007D6L)
+#endif
+#ifndef PDH_CALC_NEGATIVE_DENOMINATOR
+#define PDH_CALC_NEGATIVE_DENOMINATOR ((PDH_STATUS)0x800007D7L)
+#endif
+
 // Declare CallNtPowerInformation if not available
 extern "C" {
     NTSTATUS WINAPI CallNtPowerInformation(
@@ -148,18 +159,26 @@ CpuStats CpuMonitor::getCurrentStats() {
     stats.cores.resize(coreCount_);
     for (int i = 0; i < coreCount_; ++i) {
         status = PdhGetFormattedCounterValue(hCpuCores_[i], PDH_FMT_DOUBLE, nullptr, &counterValue);
-        if (status != ERROR_SUCCESS) {
+        
+        CoreStats& core = stats.cores[i];
+        core.coreId = i;
+        
+        if (status == ERROR_SUCCESS) {
+            core.usagePercent = counterValue.doubleValue;
+            
+            // Clamp to valid range
+            if (core.usagePercent < 0.0) core.usagePercent = 0.0;
+            if (core.usagePercent > 100.0) core.usagePercent = 100.0;
+        } else if (status == PDH_INVALID_DATA || status == PDH_CALC_NEGATIVE_VALUE || 
+                   status == PDH_CALC_NEGATIVE_DENOMINATOR) {
+            // Counter not ready yet or invalid - set to 0 and continue
+            // This can happen on first call or with some processor configurations
+            core.usagePercent = 0.0;
+        } else {
+            // Other errors are fatal
             throw std::runtime_error("PdhGetFormattedCounterValue (core " + std::to_string(i) + 
                                    ") failed: " + std::to_string(status));
         }
-
-        CoreStats& core = stats.cores[i];
-        core.coreId = i;
-        core.usagePercent = counterValue.doubleValue;
-
-        // Clamp to valid range
-        if (core.usagePercent < 0.0) core.usagePercent = 0.0;
-        if (core.usagePercent > 100.0) core.usagePercent = 100.0;
     }
 
     // Get CPU frequencies
