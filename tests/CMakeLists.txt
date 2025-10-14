@@ -22,6 +22,8 @@ add_executable(WinHKMonTests
     MemoryMonitorTest.cpp
     CpuMonitorTest.cpp
     DeltaCalculatorTest.cpp
+    NetworkMonitorTest.cpp
+    DiskMonitorTest.cpp
 )
 
 target_link_libraries(WinHKMonTests

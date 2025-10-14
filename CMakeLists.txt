@@ -28,6 +28,8 @@ add_library(WinHKMonLib STATIC
     src/WinHKMonLib/MemoryMonitor.cpp
     src/WinHKMonLib/CpuMonitor.cpp
     src/WinHKMonLib/DeltaCalculator.cpp
+    src/WinHKMonLib/NetworkMonitor.cpp
+    src/WinHKMonLib/DiskMonitor.cpp
 )
 
 target_include_directories(WinHKMonLib

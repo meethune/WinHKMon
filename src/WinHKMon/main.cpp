@@ -3,6 +3,8 @@
 #include "WinHKMonLib/StateManager.h"
 #include "WinHKMonLib/MemoryMonitor.h"
 #include "WinHKMonLib/CpuMonitor.h"
+#include "WinHKMonLib/NetworkMonitor.h"
+#include "WinHKMonLib/DiskMonitor.h"
 #include "WinHKMonLib/DeltaCalculator.h"
 #include <iostream>
 #include <windows.h>
@@ -33,11 +35,16 @@ void signalHandler(int signal) {
  * @param options Parsed CLI options
  * @param cpuMonitor CPU monitor instance (if initialized)
  * @param memoryMonitor Memory monitor instance
+ * @param networkMonitor Network monitor instance (if initialized)
+ * @param diskMonitor Disk monitor instance (if initialized)
+ * @param deltaCalc Delta calculator for timestamps
  * @return SystemMetrics structure with requested metrics
  */
 SystemMetrics collectMetrics(const CliOptions& options, 
                              CpuMonitor* cpuMonitor, 
                              MemoryMonitor& memoryMonitor,
+                             NetworkMonitor* networkMonitor,
+                             DiskMonitor* diskMonitor,
                              DeltaCalculator& deltaCalc) {
     SystemMetrics metrics;
     
@@ -62,8 +69,41 @@ SystemMetrics collectMetrics(const CliOptions& options,
         }
     }
     
-    // TODO: Collect disk stats (T013 - DiskMonitor)
-    // TODO: Collect network stats (T012 - NetworkMonitor)
+    // Collect network stats
+    if (options.showNetwork && networkMonitor != nullptr) {
+        try {
+            std::vector<InterfaceStats> interfaces = networkMonitor->getCurrentStats();
+            
+            // Filter to specific interface if requested
+            if (!options.networkInterface.empty()) {
+                auto it = std::find_if(interfaces.begin(), interfaces.end(),
+                    [&options](const InterfaceStats& iface) {
+                        return iface.name == options.networkInterface;
+                    });
+                if (it != interfaces.end()) {
+                    metrics.network = std::vector<InterfaceStats>{*it};
+                } else {
+                    std::cerr << "[WARNING] Network interface '" << options.networkInterface 
+                             << "' not found." << std::endl;
+                }
+            } else {
+                // Auto-select primary interface or include all
+                metrics.network = interfaces;
+            }
+        } catch (const std::exception& e) {
+            std::cerr << "[WARNING] Network monitoring failed: " << e.what() << std::endl;
+        }
+    }
+    
+    // Collect disk stats
+    if (options.showDisk && diskMonitor != nullptr) {
+        try {
+            metrics.disks = diskMonitor->getCurrentStats();
+        } catch (const std::exception& e) {
+            std::cerr << "[WARNING] Disk monitoring failed: " << e.what() << std::endl;
+        }
+    }
+    
     // TODO: Collect temperature stats (T017 - TempMonitor)
     
     return metrics;
@@ -82,6 +122,8 @@ int singleShotMode(const CliOptions& options) {
         // Initialize monitors
         MemoryMonitor memoryMonitor;
         CpuMonitor* cpuMonitor = nullptr;
+        NetworkMonitor* networkMonitor = nullptr;
+        DiskMonitor* diskMonitor = nullptr;
         DeltaCalculator deltaCalc;
         
         if (options.showCpu) {
@@ -92,8 +134,22 @@ int singleShotMode(const CliOptions& options) {
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
         }
         
+        if (options.showNetwork) {
+            networkMonitor = new NetworkMonitor();
+            networkMonitor->initialize();
+        }
+        
+        if (options.showDisk) {
+            diskMonitor = new DiskMonitor();
+            diskMonitor->initialize();
+            
+            // Wait for first sample (PDH requires two samples)
+            std::this_thread::sleep_for(std::chrono::milliseconds(1100));
+        }
+        
         // Collect metrics
-        SystemMetrics metrics = collectMetrics(options, cpuMonitor, memoryMonitor, deltaCalc);
+        SystemMetrics metrics = collectMetrics(options, cpuMonitor, memoryMonitor, 
+                                               networkMonitor, diskMonitor, deltaCalc);
         
         // Format output
         std::string output;
@@ -115,6 +171,13 @@ int singleShotMode(const CliOptions& options) {
         if (cpuMonitor != nullptr) {
             cpuMonitor->cleanup();
             delete cpuMonitor;
+        }
+        if (networkMonitor != nullptr) {
+            delete networkMonitor;
+        }
+        if (diskMonitor != nullptr) {
+            diskMonitor->cleanup();
+            delete diskMonitor;
         }
         
         return 0;
@@ -141,6 +204,8 @@ int continuousMode(const CliOptions& options) {
         // Initialize monitors
         MemoryMonitor memoryMonitor;
         CpuMonitor* cpuMonitor = nullptr;
+        NetworkMonitor* networkMonitor = nullptr;
+        DiskMonitor* diskMonitor = nullptr;
         DeltaCalculator deltaCalc;
         StateManager stateManager("WinHKMon");
         
@@ -150,6 +215,19 @@ int continuousMode(const CliOptions& options) {
             
             // Wait for first sample
             std::this_thread::sleep_for(std::chrono::milliseconds(100));
+        }
+        
+        if (options.showNetwork) {
+            networkMonitor = new NetworkMonitor();
+            networkMonitor->initialize();
+        }
+        
+        if (options.showDisk) {
+            diskMonitor = new DiskMonitor();
+            diskMonitor->initialize();
+            
+            // Wait for first sample
+            std::this_thread::sleep_for(std::chrono::milliseconds(1100));
         }
         
         // For CSV, output header once
@@ -162,7 +240,8 @@ int continuousMode(const CliOptions& options) {
         int sampleCount = 0;
         while (g_continueMonitoring) {
             // Collect metrics
-            SystemMetrics metrics = collectMetrics(options, cpuMonitor, memoryMonitor, deltaCalc);
+            SystemMetrics metrics = collectMetrics(options, cpuMonitor, memoryMonitor, 
+                                                   networkMonitor, diskMonitor, deltaCalc);
             
             // Format output
             std::string output;
@@ -200,6 +279,13 @@ int continuousMode(const CliOptions& options) {
         if (cpuMonitor != nullptr) {
             cpuMonitor->cleanup();
             delete cpuMonitor;
+        }
+        if (networkMonitor != nullptr) {
+            delete networkMonitor;
+        }
+        if (diskMonitor != nullptr) {
+            diskMonitor->cleanup();
+            delete diskMonitor;
         }
         
         std::cerr << "state saved." << std::endl;
@@ -240,12 +326,6 @@ int main(int argc, char* argv[]) {
         }
         
         // Warn about unimplemented features
-        if (options.showDisk) {
-            std::cerr << "[WARNING] Disk monitoring not yet implemented (T013 pending)." << std::endl;
-        }
-        if (options.showNetwork) {
-            std::cerr << "[WARNING] Network monitoring not yet implemented (T012 pending)." << std::endl;
-        }
         if (options.showTemp) {
             std::cerr << "[WARNING] Temperature monitoring not yet implemented (T017 pending)." << std::endl;
         }
