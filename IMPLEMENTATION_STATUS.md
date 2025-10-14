@@ -1,11 +1,51 @@
 # WinHKMon Implementation Status
 
 **Date**: 2025-10-14  
-**Status**: Phase 4 Complete - US2 Comprehensive Monitoring (CHECKPOINT 4 ✅)  
+**Status**: Phase 5 In Progress - US3 Thermal Monitoring (T016 ✅)  
 **Build Status**: ✅ **ALL 123 TESTS PASSING** on Windows 10/11 (MSVC 17.14)  
 **Spec Status**: ✅ **SPECIFICATIONS VALIDATED** via `/speckit.analyze` (commit cd90853)
 
-## Recent Updates (2025-10-14 Late Evening)
+## Recent Updates (2025-10-14 Night)
+
+### Phase 5 Started - Temperature Monitoring Research Complete ✅
+
+**T016: LibreHardwareMonitor Research** (commit b705350)
+
+Comprehensive research completed for temperature monitoring implementation:
+
+**Research Deliverable:**
+- Created `research/temperature-monitoring.md` (700+ lines)
+- Evaluated 4 integration approaches
+- Assessed security risks and mitigations
+- Verified constitutional compliance
+
+**Key Findings:**
+- ✅ **LibreHardwareMonitor** recommended (MPL 2.0 license, actively maintained)
+- ✅ **Admin privileges required** due to kernel driver (WinRing0.sys) - documented in [research references](https://www.hwinfo.com/forum/threads/make-hwinfo-runnable-under-a-limited-account-please.9725/)
+- ✅ **C++/CLI wrapper approach** selected for direct integration
+- ✅ **Graceful degradation** strategy for non-admin users
+- ✅ **Constitutional compliance** verified (explicit exception for temperature)
+- ✅ **Security assessment** complete (LOW residual risk)
+
+**Alternative Solutions Evaluated:**
+- Service-based approach ([LibreHardwareService](https://github.com/epinter/LibreHardwareService)) - deferred to v2.0
+- WMI fallback (MSAcpi_ThermalZoneTemperature) - limited support, use as fallback only
+- Hardware Supervisor service - too complex for v1.0
+
+**Implementation Strategy:**
+- Requires Windows + Visual Studio for C++/CLI compilation
+- Admin detection via `CheckTokenMembership` API
+- User experience: Graceful error message when not admin
+- Security: Never auto-elevate, always inform user
+
+**Next Steps:**
+- T017: TempMonitor implementation (3 days) - **REQUIRES WINDOWS**
+- T018: CLI integration (0.5 days) - **REQUIRES WINDOWS**
+- T019: Integration testing (1 day) - **REQUIRES WINDOWS**
+
+**Environment Constraint:** Phase 5 implementation requires Windows 10/11 with MSVC and .NET Desktop Development workload.
+
+## Previous Updates (2025-10-14 Late Evening)
 
 ### Specification Analysis Complete ✅
 Performed comprehensive cross-artifact consistency and quality analysis using `/speckit.analyze` command:
