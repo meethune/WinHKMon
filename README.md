@@ -4,8 +4,8 @@
 [![Windows](https://img.shields.io/badge/platform-Windows%2010%2B-blue.svg)](https://www.microsoft.com/windows)
 [![C++17](https://img.shields.io/badge/C%2B%2B-17-blue.svg)](https://isocpp.org/)
 [![Build](https://img.shields.io/badge/build-ready-brightgreen.svg)](#build-status)
-[![Tests](https://img.shields.io/badge/tests-94%20test%20cases-brightgreen.svg)](#testing)
-[![Status](https://img.shields.io/badge/status-MVP%20complete-green.svg)](#project-status)
+[![Tests](https://img.shields.io/badge/tests-123%20test%20cases-brightgreen.svg)](#testing)
+[![Status](https://img.shields.io/badge/status-Phase%204%20Complete-green.svg)](#project-status)
 
 A lightweight, native Windows system monitoring tool that provides real-time visibility into system resources (CPU, memory, disk, network, temperature) with minimal performance overhead and maximum accuracy.
 
@@ -21,7 +21,7 @@ A lightweight, native Windows system monitoring tool that provides real-time vis
 
 ### Current Development Status
 
-**MVP Complete!** ✅ Phase 3 (US1 - Basic Monitoring) is fully implemented with CPU and RAM monitoring.
+**Phase 4 Complete!** ✅ US2 (Comprehensive Monitoring) is fully implemented with CPU, RAM, Network, and Disk monitoring.
 
 - ✅ **Project Setup** - CMake build system, directory structure, data models
 - ✅ **CLI Parser** - Complete argument parsing with 27 tests
@@ -30,34 +30,39 @@ A lightweight, native Windows system monitoring tool that provides real-time vis
 - ✅ **Memory Monitor** - RAM and page file statistics with 10 tests
 - ✅ **CPU Monitor** - Usage and frequency monitoring with 14 tests
 - ✅ **Delta Calculator** - Rate calculations with 15 tests
-- ✅ **Main CLI Application** - Complete integration with single-shot and continuous modes
-- ✅ **Test Coverage** - 94 test cases across 7 test suites
+- ✅ **Network Monitor** - Interface stats with rate calculations with 13 tests
+- ✅ **Disk Monitor** - Space and I/O monitoring with 17 tests
+- ✅ **Main CLI Application** - Complete integration with all monitoring types
+- ✅ **Test Coverage** - 123 test cases across 9 test suites
 
-**Next**: Phase 4 (US2) - Network and Disk monitoring
+**Next**: Phase 5 (US3) - Temperature monitoring
 
-### Planned Features (v1.0)
+### Implemented Features (v0.6.0)
 
-- **CPU Monitoring**
+- ✅ **CPU Monitoring**
   - Overall and per-core usage percentages
   - Current CPU frequency per core
-  - User/system/idle time breakdown
+  - Performance Data Helper (PDH) API integration
   
-- **Memory Monitoring**
+- ✅ **Memory Monitoring**
   - Physical RAM usage (total, available, used)
   - Page file statistics
   - Memory usage percentages
 
-- **Disk I/O Monitoring**
-  - Read/write transfer rates per physical disk
-  - Cumulative bytes read/written
+- ✅ **Disk Monitoring**
+  - **DISK**: Disk space (total/used/free per drive)
+  - **IO**: Read/write transfer rates per physical disk
   - Disk busy percentage
-  - Disk capacity information
+  - PDH counter integration for I/O statistics
 
-- **Network Monitoring**
+- ✅ **Network Monitoring**
   - Send/receive rates per interface
   - Automatic primary interface selection
   - Link speed and connection status
   - Support for multiple network interfaces
+  - IP Helper API integration
+
+### Planned Features (v1.0)
 
 - **Temperature Monitoring** *(requires Administrator)*
   - CPU temperature (overall and per-core)
@@ -79,7 +84,7 @@ A lightweight, native Windows system monitoring tool that provides real-time vis
 
 ## 🚀 Quick Start
 
-> **Note**: MVP is complete! CPU and RAM monitoring are fully functional. The executable requires Windows to build and run. Network, Disk, and Temperature monitoring are planned for future phases.
+> **Note**: Phase 4 Complete! CPU, RAM, Network, and Disk monitoring are fully functional. The executable requires Windows to build and run. Temperature monitoring is planned for Phase 5.
 
 ### Installation
 
@@ -117,8 +122,9 @@ WinHKMon CPU RAM NET LINE
 ```
 CPU:  23.5%  2.4 GHz
 RAM:  8192M available (50.0% used)
-DISK: 0 C: ↑ 15.3 MB/s  ↓ 2.1 MB/s  (12.5% busy)
-NET:  Ethernet ↑ 2.1 Mbps  ↓ 15.3 Mbps  (1 Gbps link)
+DISK: C: 237.5 GB / 475.9 GB (50.1% used)
+IO:   C: < 15.3 MB/s  > 2.1 MB/s  (12.5% busy)
+NET:  Ethernet < 2.1 Mbps  > 15.3 Mbps  (1.0 Gbps link)
 ```
 
 **JSON Format:**
@@ -199,7 +205,7 @@ cmake --build . --config Release
 
 # Run tests
 ctest -C Release --output-on-failure
-# Expected: All 94 test cases pass
+# Expected: All 123 test cases pass
 
 # Run executable
 .\Release\WinHKMon.exe --help
@@ -208,8 +214,8 @@ ctest -C Release --output-on-failure
 ### Build Status
 
 ✅ **Ready for Windows 10/11 with MSVC 2022**  
-- Implementation: Complete for US1 (CPU + RAM monitoring)
-- Tests: 94 test cases across 7 test suites
+- Implementation: Complete for US1 + US2 (CPU, RAM, Network, Disk monitoring)
+- Tests: 123 test cases across 9 test suites
 - Code Quality: 0 warnings with `/WX` flag
 - Test Coverage: 100% of implemented components
 - Platform: Requires Windows for compilation and execution
@@ -226,23 +232,25 @@ ctest -C Release --output-on-failure
 
 ## 🧪 Testing
 
-**Test Status**: ✅ 94 test cases ready for Windows execution
+**Test Status**: ✅ 123 test cases passing on Windows 10/11
 
 ### Test Suite Breakdown
 
 | Test Suite | Tests | Status | Coverage |
 |------------|-------|--------|----------|
-| SampleTest | 3 | ✅ Ready | Framework validation |
-| CliParserTest | 27 | ✅ Ready | Argument parsing, validation, all flags |
-| OutputFormatterTest | 15 | ✅ Ready | Text, JSON, CSV formats, escaping |
-| StateManagerTest | 10 | ✅ Ready | Save/load, corruption handling, paths |
-| **MemoryMonitorTest** | **10** | **✅ Ready** | **RAM and page file statistics** |
-| **CpuMonitorTest** | **14** | **✅ Ready** | **CPU usage and frequency** |
-| **DeltaCalculatorTest** | **15** | **✅ Ready** | **Rate calculations and timing** |
-| **Total** | **94** | **✅ Ready** | **All US1 (MVP) features** |
+| SampleTest | 3 | ✅ Passing | Framework validation |
+| CliParserTest | 27 | ✅ Passing | Argument parsing, validation, all flags |
+| OutputFormatterTest | 15 | ✅ Passing | Text, JSON, CSV formats, escaping |
+| StateManagerTest | 10 | ✅ Passing | Save/load, corruption handling, paths |
+| MemoryMonitorTest | 10 | ✅ Passing | RAM and page file statistics |
+| CpuMonitorTest | 14 | ✅ Passing | CPU usage and frequency |
+| DeltaCalculatorTest | 15 | ✅ Passing | Rate calculations and timing |
+| **NetworkMonitorTest** | **13** | **✅ Passing** | **Interface stats, rate calculations** |
+| **DiskMonitorTest** | **17** | **✅ Passing** | **Disk space and I/O monitoring** |
+| **Total** | **123** | **✅ Passing** | **All US1 + US2 features** |
 
 **Test Approach**: Test-first development (TDD) with 100% coverage of implemented components  
-**Platform**: Requires Windows 10/11 with MSVC 2022 for execution
+**Platform**: Windows 10/11 with MSVC 2022 (17.14)
 
 ### Running Tests
 
@@ -272,12 +280,19 @@ Comprehensive planning and design documentation is available in `.specify/`:
 - **[Quick Start Guide](/.specify/features/winhkmon-system-resource-monitoring/quickstart.md)** - Developer onboarding (15-minute first implementation)
 - **[Constitution](/.specify/memory/constitution.md)** - Project principles and architectural guidelines
 
+Technical documentation and implementation notes are in `docs/`:
+
+- **[DISK_IO_SEPARATION.md](/docs/DISK_IO_SEPARATION.md)** - DISK vs IO metric design rationale
+- **[NETWORK_FIX.md](/docs/NETWORK_FIX.md)** - Network and disk I/O rate calculation fix
+- **[DISK_IO_DIAGNOSTIC.md](/docs/DISK_IO_DIAGNOSTIC.md)** - PDH counter verification
+- **[SPEC_UPDATE_SUMMARY.md](/docs/SPEC_UPDATE_SUMMARY.md)** - Specification updates for Phase 4
+
 ---
 
 ## 🏗️ Project Status
 
-**Current Phase**: Phase 3 Complete ✅ → Phase 4 (US2) Ready to Start  
-**Next Milestone**: v0.8 Comprehensive Monitoring (add DISK + NET)
+**Current Phase**: Phase 4 Complete ✅ → Phase 5 (US3) Ready to Start  
+**Next Milestone**: v1.0 Thermal Monitoring (add TEMP)
 
 ### Development Roadmap
 
@@ -297,11 +312,15 @@ Comprehensive planning and design documentation is available in `.specify/`:
   - [x] CPU monitor with PDH and frequency (14 tests)
   - [x] Delta calculator for rate calculations (15 tests)
   - [x] Main CLI application with single-shot and continuous modes
-  - [x] **v0.5 (MVP)** - CPU + RAM monitoring fully implemented
-- [ ] **Phase 4**: US2 - Comprehensive Monitoring
-  - [ ] **v0.8** - Add DISK and NET monitoring - *1.5 weeks*
+  - [x] **v0.5.0-mvp** - CPU + RAM monitoring fully implemented
+- [x] **Phase 4**: US2 - Comprehensive Monitoring (Complete - CHECKPOINT 4 ✅)
+  - [x] Network monitor with IP Helper API (13 tests)
+  - [x] Disk monitor with PDH counters (17 tests)
+  - [x] State management and delta calculations for rates
+  - [x] DISK/IO metric separation (space vs I/O rates)
+  - [x] **v0.6.0** - CPU, RAM, Network, Disk monitoring fully implemented
 - [ ] **Phase 5**: US3 - Thermal Monitoring
-  - [ ] **v1.0** - Add TEMP monitoring and polish - *3 weeks*
+  - [ ] **v1.0.0** - Add TEMP monitoring and polish - *3 weeks*
 
 ### Implementation Progress
 
@@ -309,15 +328,15 @@ Comprehensive planning and design documentation is available in `.specify/`:
 |-------------------|--------|-------|------------|
 | Setup & Foundation | ✅ **Complete** | T001-T006 | **100%** (6/6) |
 | US1: Basic Monitoring (MVP) | ✅ **Complete** | T007-T011 | **100%** (5/5) |
-| US2: Comprehensive Monitoring | 🚧 **Next** | T012-T015 | 0% (0/4) |
-| US3: Thermal Monitoring | 📋 Planned | T016-T019 | 0% (0/4) |
+| US2: Comprehensive Monitoring | ✅ **Complete** | T012-T015 | **100%** (4/4) |
+| US3: Thermal Monitoring | 🚧 **Next** | T016-T019 | 0% (0/4) |
 | Polish & Cross-Cutting | 📋 Planned | T020-T024 | 0% (0/5) |
 | Release | 📋 Planned | T025-T026 | 0% (0/2) |
 
-**Total Progress**: 11 of 26 tasks complete (42%)  
-**MVP Status**: ✅ Complete (CHECKPOINT 3 passed)  
-**Test Coverage**: ✅ 94 test cases ready  
-**Next**: T012 - Implement NetworkMonitor
+**Total Progress**: 15 of 26 tasks complete (58%)  
+**Phase 4 Status**: ✅ Complete (CHECKPOINT 4 passed)  
+**Test Coverage**: ✅ 123 test cases passing  
+**Next**: T016 - Research LibreHardwareMonitor Integration
 
 ---
 
@@ -373,16 +392,13 @@ git push origin feature/your-feature-name
 
 ### Good First Issues
 
-MVP complete! Ready for US2 implementation:
+Phase 4 complete! Ready for US3 (Temperature Monitoring):
 
-- ✅ ~~T001-T006: Foundation~~ (Complete)
-- ✅ ~~T007: MemoryMonitor~~ (Complete)
-- ✅ ~~T008: CpuMonitor~~ (Complete)
-- ✅ ~~T009: DeltaCalculator~~ (Complete)
-- ✅ ~~T010: Main CLI Application~~ (Complete)
-- ✅ ~~T011: Integration Testing~~ (Complete)
-- [ ] **T012: Implement NetworkMonitor** ← Good next task! IP Helper API
-- [ ] T013: Implement DiskMonitor (PDH counters for disk I/O)
+- ✅ ~~T001-T015: Foundation, US1, US2~~ (Complete)
+- [ ] **T016: Research LibreHardwareMonitor Integration** ← Good next task! Research phase
+- [ ] T017: Implement TempMonitor (LibreHardwareMonitor wrapper)
+- [ ] T018: Extend Main CLI for TEMP
+- [ ] T019: Integration Testing for TEMP
 
 See [tasks.md](/.specify/features/winhkmon-system-resource-monitoring/tasks.md) for complete task breakdown.
 
@@ -483,12 +499,12 @@ See [Specification - Out of Scope](/.specify/features/winhkmon-system-resource-m
 ## 📈 Project Metrics
 
 **Implementation Status**:
-- **Code Written**: ~3,500 lines (10 headers + 7 implementations)
-- **Tests Written**: 94 test cases across 7 test suites
+- **Code Written**: ~5,200 lines (14 headers + 11 implementations)
+- **Tests Written**: 123 test cases across 9 test suites
 - **Test Coverage**: 100% of implemented components
-- **Build Status**: ✅ Ready for Windows MSVC 2022 (0 warnings with `/WX`)
-- **Tasks Complete**: 11 of 26 (42%)
-- **Checkpoints Passed**: 3 of 7 (CHECKPOINT 1 ✅, CHECKPOINT 2 ✅, **CHECKPOINT 3 ✅**)
+- **Build Status**: ✅ Ready for Windows 10/11 MSVC 2022 (0 warnings with `/WX`)
+- **Tasks Complete**: 15 of 26 (58%)
+- **Checkpoints Passed**: 4 of 7 (CHECKPOINT 1-4 ✅)
 
 **Documentation Generated**:
 - Total Lines: ~5,900+ lines of technical documentation
@@ -513,7 +529,7 @@ See [Specification - Out of Scope](/.specify/features/winhkmon-system-resource-m
 
 **Built with ❤️ for Windows system administrators, developers, and power users.**
 
-**Status**: ✅ MVP complete (CPU + RAM monitoring, 94 test cases), ready for US2 (DISK + NET)!
+**Status**: ✅ Phase 4 complete (CPU, RAM, Network, Disk monitoring - 123 test cases), ready for US3 (TEMP)!
 
 ---
 
