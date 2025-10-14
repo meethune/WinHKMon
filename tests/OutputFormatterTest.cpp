@@ -217,15 +217,11 @@ TEST(OutputFormatterTest, TextUsesUnicodeSymbols) {
     
     std::string output = formatText(metrics, false);
     
-    // Should contain up/down arrows or ASCII equivalents
-    bool hasArrows = (output.find("↑") != std::string::npos && 
-                      output.find("↓") != std::string::npos);
-    bool hasAscii = (output.find("up") != std::string::npos || 
-                     output.find("down") != std::string::npos ||
-                     output.find("^") != std::string::npos ||
-                     output.find("v") != std::string::npos);
+    // Should contain < and > direction indicators (ASCII-safe for Windows console)
+    bool hasDirectionIndicators = (output.find("<") != std::string::npos && 
+                                   output.find(">") != std::string::npos);
     
-    EXPECT_TRUE(hasArrows || hasAscii);
+    EXPECT_TRUE(hasDirectionIndicators) << "Output should contain < and > direction indicators";
 }
 
 // Test handling of missing optional fields

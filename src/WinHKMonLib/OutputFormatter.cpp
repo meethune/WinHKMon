@@ -142,8 +142,9 @@ std::string formatText(const SystemMetrics& metrics, bool singleLine) {
     output << std::fixed << std::setprecision(1);
     
     const char* separator = singleLine ? "  " : "\n";
-    const char* arrowUp = "↑";
-    const char* arrowDown = "↓";
+    // Use ASCII characters for Windows console compatibility (UTF-8 arrows don't display correctly)
+    const char* arrowUp = "<";      // < = Read (for disk) / In (for network)
+    const char* arrowDown = ">";    // > = Write (for disk) / Out (for network)
     
     // CPU
     if (metrics.cpu) {
