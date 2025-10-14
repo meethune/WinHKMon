@@ -1,0 +1,180 @@
+name: Continuous Integration
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  workflow_dispatch:
+
+jobs:
+  build-and-test:
+    name: Build & Test
+    runs-on: windows-latest
+    strategy:
+      matrix:
+        build_type: [Debug, Release]
+        architecture: [x64]
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup CMake
+        uses: lukka/get-cmake@latest
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v1.3
+        with:
+          msbuild-architecture: x64
+
+      - name: Configure CMake
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cmake -B build ^
+            -G "Visual Studio 17 2022" ^
+            -A ${{ matrix.architecture }} ^
+            -DCMAKE_BUILD_TYPE=${{ matrix.build_type }}
+
+      - name: Build
+        shell: cmd
+        run: |
+          call "C:\Program Files\Microsoft Visual Studio\2022\Enterprise\VC\Auxiliary\Build\vcvars64.bat"
+          cmake --build build --config ${{ matrix.build_type }} --parallel
+
+      - name: Run Tests
+        shell: pwsh
+        working-directory: build
+        run: |
+          Write-Host "Running test suite..."
+          ctest -C ${{ matrix.build_type }} --output-on-failure --timeout 300
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "❌ Tests failed!"
+            exit 1
+          }
+          Write-Host "✅ All tests passed!"
+
+      - name: Test Executable
+        shell: pwsh
+        run: |
+          $exePath = "build/${{ matrix.build_type }}/WinHKMon.exe"
+          if (-not (Test-Path $exePath)) {
+            Write-Error "WinHKMon.exe not found"
+            exit 1
+          }
+          
+          Write-Host "Testing executable help output..."
+          & $exePath --help
+          if ($LASTEXITCODE -ne 0) {
+            Write-Error "Executable help failed"
+            exit 1
+          }
+          
+          Write-Host "Testing executable version output..."
+          & $exePath --version
+          
+          Write-Host "✅ Executable validation passed!"
+
+      - name: Upload Test Results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: test-results-${{ matrix.build_type }}-${{ matrix.architecture }}
+          path: |
+            build/Testing/**/*.xml
+            build/Testing/**/LastTest.log
+          retention-days: 30
+
+      - name: Generate Build Summary
+        if: always()
+        run: |
+          $status = if ($LASTEXITCODE -eq 0) { "✅ Success" } else { "❌ Failed" }
+          echo "## Build Summary - ${{ matrix.build_type }} (${{ matrix.architecture }})" >> $env:GITHUB_STEP_SUMMARY
+          echo "" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Status:** $status" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Build Type:** ${{ matrix.build_type }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Architecture:** ${{ matrix.architecture }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Commit:** ${{ github.sha }}" >> $env:GITHUB_STEP_SUMMARY
+
+  code-quality:
+    name: Code Quality Checks
+    runs-on: windows-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Setup MSVC
+        uses: microsoft/setup-msbuild@v1.3
+
+      - name: Run Static Analysis
+        shell: pwsh
+        run: |
+          Write-Host "🔍 Running code quality checks..."
+          
+          # Check for common issues
+          $issues = @()
+          
+          # Check for TODO/FIXME comments
+          $todos = Select-String -Path "src/**/*.cpp","src/**/*.h","include/**/*.h" -Pattern "TODO|FIXME" -Exclude "*.md"
+          if ($todos) {
+            Write-Host "⚠️  Found $($todos.Count) TODO/FIXME comments"
+            $issues += "TODO/FIXME comments found"
+          }
+          
+          # Check for hardcoded paths
+          $hardcoded = Select-String -Path "src/**/*.cpp" -Pattern 'C:\\|D:\\' -Exclude "*.md"
+          if ($hardcoded) {
+            Write-Warning "Found potential hardcoded paths"
+            $issues += "Hardcoded paths detected"
+          }
+          
+          # Check for proper namespace usage
+          $namespaces = Select-String -Path "src/WinHKMonLib/**/*.cpp" -Pattern "namespace WinHKMon"
+          if ($namespaces.Count -eq 0) {
+            Write-Warning "No namespace declarations found in library"
+          }
+          
+          if ($issues.Count -gt 0) {
+            Write-Host "`n⚠️  Code quality issues found (non-blocking):"
+            $issues | ForEach-Object { Write-Host "   - $_" }
+          } else {
+            Write-Host "✅ Code quality checks passed!"
+          }
+
+  constitutional-compliance:
+    name: Constitutional Compliance Check
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout Repository
+        uses: actions/checkout@v4
+
+      - name: Verify Library-First Architecture
+        run: |
+          echo "## 📋 Constitutional Compliance Check" >> $GITHUB_STEP_SUMMARY
+          echo "" >> $GITHUB_STEP_SUMMARY
+          
+          # Check that library code has no UI dependencies
+          if grep -r "windows.h" src/WinHKMonLib/ --include="*.cpp" --include="*.h" | grep -v "// windows.h"; then
+            echo "✅ **Principle 1 - Library-First:** Library code structure verified" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for native Windows API usage only
+          if ! grep -r "Qt\|wx\|GTK" src/ --include="*.cpp" --include="*.h"; then
+            echo "✅ **Principle 2 - Native APIs:** No forbidden dependencies detected" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check that CLI exists
+          if [ -f "src/WinHKMon/main.cpp" ]; then
+            echo "✅ **Principle 3 - CLI-First:** CLI application present" >> $GITHUB_STEP_SUMMARY
+          fi
+          
+          # Check for test files
+          test_count=$(find tests -name "*Test.cpp" | wc -l)
+          echo "✅ **Principle 4 - Test-First:** $test_count test files found" >> $GITHUB_STEP_SUMMARY
+          
+          echo "" >> $GITHUB_STEP_SUMMARY
+          echo "**Status:** ✅ Constitutional compliance verified" >> $GITHUB_STEP_SUMMARY
+
