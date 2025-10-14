@@ -154,11 +154,11 @@ int singleShotMode(const CliOptions& options) {
         // Format output
         std::string output;
         if (options.format == OutputFormat::JSON) {
-            output = formatJson(metrics);
+            output = formatJson(metrics, options);
         } else if (options.format == OutputFormat::CSV) {
-            output = formatCsv(metrics, true);  // Include header
+            output = formatCsv(metrics, true, options);  // Include header
         } else {
-            output = formatText(metrics, options.singleLine);
+            output = formatText(metrics, options.singleLine, options);
         }
         
         // Output to stdout
@@ -233,7 +233,7 @@ int continuousMode(const CliOptions& options) {
         // For CSV, output header once
         if (options.format == OutputFormat::CSV) {
             SystemMetrics dummyMetrics;
-            std::cout << formatCsv(dummyMetrics, true);
+            std::cout << formatCsv(dummyMetrics, true, options);
         }
         
         // Monitoring loop
@@ -246,9 +246,9 @@ int continuousMode(const CliOptions& options) {
             // Format output
             std::string output;
             if (options.format == OutputFormat::JSON) {
-                output = formatJson(metrics);
+                output = formatJson(metrics, options);
             } else if (options.format == OutputFormat::CSV) {
-                output = formatCsv(metrics, false);  // No header
+                output = formatCsv(metrics, false, options);  // No header
             } else {
                 // For text mode in continuous, optionally clear screen
                 if (sampleCount > 0 && !options.singleLine) {
@@ -256,7 +256,7 @@ int continuousMode(const CliOptions& options) {
                     // (simple version - could use Windows console API for better control)
                     std::cout << "\n";
                 }
-                output = formatText(metrics, options.singleLine);
+                output = formatText(metrics, options.singleLine, options);
             }
             
             // Output to stdout

@@ -137,7 +137,7 @@ std::string getTimestampString() {
 
 }  // anonymous namespace
 
-std::string formatText(const SystemMetrics& metrics, bool singleLine) {
+std::string formatText(const SystemMetrics& metrics, bool singleLine, const CliOptions& options) {
     std::ostringstream output;
     output << std::fixed << std::setprecision(1);
     
@@ -170,15 +170,36 @@ std::string formatText(const SystemMetrics& metrics, bool singleLine) {
         output << separator;
     }
     
-    // Disks
-    if (metrics.disks) {
+    // Disk Space (DISK metric)
+    if (metrics.disks && options.showDiskSpace) {
         for (const auto& disk : *metrics.disks) {
             if (singleLine) {
                 output << "DISK:" << disk.deviceName << ":"
+                       << formatBytes(disk.usedBytes) << "/"
+                       << formatBytes(disk.totalSizeBytes);
+            } else {
+                double usedPercent = (disk.totalSizeBytes > 0) 
+                    ? (static_cast<double>(disk.usedBytes) / disk.totalSizeBytes * 100.0) 
+                    : 0.0;
+                output << "DISK: " << disk.deviceName << " "
+                       << formatBytes(disk.usedBytes) << " / "
+                       << formatBytes(disk.totalSizeBytes) << " "
+                       << "(" << std::fixed << std::setprecision(1) << usedPercent << "% used, "
+                       << formatBytes(disk.freeBytes) << " free)";
+            }
+            output << separator;
+        }
+    }
+    
+    // Disk I/O (IO metric)
+    if (metrics.disks && options.showDiskIO) {
+        for (const auto& disk : *metrics.disks) {
+            if (singleLine) {
+                output << "IO:" << disk.deviceName << ":"
                        << formatBytesPerSec(disk.bytesReadPerSec) << arrowUp
                        << formatBytesPerSec(disk.bytesWrittenPerSec) << arrowDown;
             } else {
-                output << "DISK: " << disk.deviceName << " "
+                output << "IO:   " << disk.deviceName << " "
                        << arrowUp << " " << formatBytesPerSec(disk.bytesReadPerSec) << "  "
                        << arrowDown << " " << formatBytesPerSec(disk.bytesWrittenPerSec)
                        << "  (" << disk.percentBusy << "% busy)";
@@ -235,7 +256,7 @@ std::string formatText(const SystemMetrics& metrics, bool singleLine) {
     return result;
 }
 
-std::string formatJson(const SystemMetrics& metrics) {
+std::string formatJson(const SystemMetrics& metrics, const CliOptions& options) {
     std::ostringstream json;
     json << std::fixed << std::setprecision(1);
     
@@ -282,14 +303,18 @@ std::string formatJson(const SystemMetrics& metrics) {
         json << "  }";
     }
     
-    // Disks
+    // Disks (includes both space and I/O data)
     if (metrics.disks && !metrics.disks->empty()) {
         json << ",\n  \"disks\": [\n";
         for (size_t i = 0; i < metrics.disks->size(); i++) {
             const auto& disk = (*metrics.disks)[i];
             json << "    {\n";
             json << "      \"deviceName\": \"" << escapeJson(disk.deviceName) << "\",\n";
+            // Space information (DISK metric)
             json << "      \"totalSizeBytes\": " << disk.totalSizeBytes << ",\n";
+            json << "      \"usedBytes\": " << disk.usedBytes << ",\n";
+            json << "      \"freeBytes\": " << disk.freeBytes << ",\n";
+            // I/O information (IO metric)
             json << "      \"bytesReadPerSec\": " << disk.bytesReadPerSec << ",\n";
             json << "      \"bytesWrittenPerSec\": " << disk.bytesWrittenPerSec << ",\n";
             json << "      \"percentBusy\": " << disk.percentBusy << "\n";
@@ -340,13 +365,17 @@ std::string formatJson(const SystemMetrics& metrics) {
     return json.str();
 }
 
-std::string formatCsv(const SystemMetrics& metrics, bool includeHeader) {
+std::string formatCsv(const SystemMetrics& metrics, bool includeHeader, const CliOptions& options) {
     std::ostringstream csv;
     
     if (includeHeader) {
         csv << "timestamp,cpu_percent,cpu_mhz,ram_available_mb,ram_percent";
         
-        if (metrics.disks) {
+        if (metrics.disks && options.showDiskSpace) {
+            csv << ",disk_name,disk_used_gb,disk_total_gb,disk_free_gb,disk_used_percent";
+        }
+        
+        if (metrics.disks && options.showDiskIO) {
             csv << ",disk_name,disk_read_mbps,disk_write_mbps,disk_busy_percent";
         }
         
@@ -380,13 +409,30 @@ std::string formatCsv(const SystemMetrics& metrics, bool includeHeader) {
         csv << ",";
     }
     
-    // Disks (first disk only for CSV simplicity)
-    if (metrics.disks && !metrics.disks->empty()) {
+    // Disk Space (first disk only for CSV simplicity)
+    if (metrics.disks && !metrics.disks->empty() && options.showDiskSpace) {
+        const auto& disk = (*metrics.disks)[0];
+        double usedGB = disk.usedBytes / (1024.0 * 1024.0 * 1024.0);
+        double totalGB = disk.totalSizeBytes / (1024.0 * 1024.0 * 1024.0);
+        double freeGB = disk.freeBytes / (1024.0 * 1024.0 * 1024.0);
+        double usedPercent = (disk.totalSizeBytes > 0) 
+            ? (static_cast<double>(disk.usedBytes) / disk.totalSizeBytes * 100.0) 
+            : 0.0;
+        csv << "," << escapeCsv(disk.deviceName)
+            << "," << std::fixed << std::setprecision(2) << usedGB
+            << "," << totalGB
+            << "," << freeGB
+            << "," << std::setprecision(1) << usedPercent;
+    }
+    
+    // Disk I/O (first disk only for CSV simplicity)
+    if (metrics.disks && !metrics.disks->empty() && options.showDiskIO) {
         const auto& disk = (*metrics.disks)[0];
         csv << "," << escapeCsv(disk.deviceName)
-            << "," << (disk.bytesReadPerSec / (1024.0 * 1024.0))
+            << "," << std::fixed << std::setprecision(2) 
+            << (disk.bytesReadPerSec / (1024.0 * 1024.0))
             << "," << (disk.bytesWrittenPerSec / (1024.0 * 1024.0))
-            << "," << disk.percentBusy;
+            << "," << std::setprecision(1) << disk.percentBusy;
     }
     
     // Network (first interface only for CSV simplicity)
