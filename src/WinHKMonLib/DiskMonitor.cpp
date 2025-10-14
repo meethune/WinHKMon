@@ -46,7 +46,7 @@ void DiskMonitor::initialize() {
     // Get list of instances
     DWORD bufferSize = 0;
     DWORD instanceCount = 0;
-    status = PdhEnumObjectItems(
+    status = PdhEnumObjectItemsW(
         nullptr,                    // Local machine
         nullptr,                    // Default data source
         L"PhysicalDisk",           // Object name
@@ -63,7 +63,7 @@ void DiskMonitor::initialize() {
         std::vector<wchar_t> instanceBuffer(instanceCount);
         bufferSize = 0;  // Reset for counters
         
-        status = PdhEnumObjectItems(
+        status = PdhEnumObjectItemsW(
             nullptr,
             nullptr,
             L"PhysicalDisk",
@@ -225,7 +225,7 @@ void DiskMonitor::addDiskCounters(const std::string& diskInstance) {
     
     // Read bytes/sec counter
     std::wstring readPath = L"\\PhysicalDisk(" + wInstanceName + L")\\Disk Read Bytes/sec";
-    PDH_STATUS status = PdhAddCounter(hQuery_, readPath.c_str(), 0, &counters.bytesRead);
+    PDH_STATUS status = PdhAddCounterW(hQuery_, readPath.c_str(), 0, &counters.bytesRead);
     if (status != ERROR_SUCCESS) {
         throw std::runtime_error("Failed to add read counter for " + diskInstance + 
                                 ": error " + std::to_string(status));
@@ -233,7 +233,7 @@ void DiskMonitor::addDiskCounters(const std::string& diskInstance) {
     
     // Write bytes/sec counter
     std::wstring writePath = L"\\PhysicalDisk(" + wInstanceName + L")\\Disk Write Bytes/sec";
-    status = PdhAddCounter(hQuery_, writePath.c_str(), 0, &counters.bytesWritten);
+    status = PdhAddCounterW(hQuery_, writePath.c_str(), 0, &counters.bytesWritten);
     if (status != ERROR_SUCCESS) {
         throw std::runtime_error("Failed to add write counter for " + diskInstance + 
                                 ": error " + std::to_string(status));
@@ -241,7 +241,7 @@ void DiskMonitor::addDiskCounters(const std::string& diskInstance) {
     
     // Disk time percentage counter
     std::wstring busyPath = L"\\PhysicalDisk(" + wInstanceName + L")\\% Disk Time";
-    status = PdhAddCounter(hQuery_, busyPath.c_str(), 0, &counters.percentBusy);
+    status = PdhAddCounterW(hQuery_, busyPath.c_str(), 0, &counters.percentBusy);
     if (status != ERROR_SUCCESS) {
         throw std::runtime_error("Failed to add busy counter for " + diskInstance + 
                                 ": error " + std::to_string(status));
@@ -262,7 +262,7 @@ uint64_t DiskMonitor::getDiskSize(const std::string& driveLetter) {
     ULARGE_INTEGER totalBytes;
     ULARGE_INTEGER totalFreeBytes;
     
-    if (GetDiskFreeSpaceEx(
+    if (GetDiskFreeSpaceExW(
             wDrive.c_str(),
             &freeBytesAvailable,
             &totalBytes,

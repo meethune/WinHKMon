@@ -55,10 +55,10 @@ std::vector<InterfaceStats> NetworkMonitor::getCurrentStats() {
     
     // Enumerate all interfaces
     for (ULONG i = 0; i < pIfTable->NumEntries; i++) {
-        const MIB_IF_ROW2& ifRow = pIfTable->Table[i];
+        MIB_IF_ROW2 ifaceRow = pIfTable->Table[i];
         
         // Skip loopback interfaces
-        if (isLoopback(ifRow.Type)) {
+        if (isLoopback(ifaceRow.Type)) {
             continue;
         }
         
@@ -66,37 +66,37 @@ std::vector<InterfaceStats> NetworkMonitor::getCurrentStats() {
         InterfaceStats stats;
         
         // Interface identification
-        stats.name = wideToUtf8(ifRow.Alias);  // User-friendly name (e.g., "Ethernet", "Wi-Fi")
-        stats.description = wideToUtf8(ifRow.Description);  // Hardware description
+        stats.name = wideToUtf8(ifaceRow.Alias);  // User-friendly name (e.g., "Ethernet", "Wi-Fi")
+        stats.description = wideToUtf8(ifaceRow.Description);  // Hardware description
         
         // Connection state
-        stats.isConnected = (ifRow.MediaConnectState == MediaConnectStateConnected);
+        stats.isConnected = (ifaceRow.MediaConnectState == MediaConnectStateConnected);
         
         // Link speed (bits per second)
-        stats.linkSpeedBitsPerSec = ifRow.TransmitLinkSpeed;  // or ReceiveLinkSpeed (typically same)
+        stats.linkSpeedBitsPerSec = ifaceRow.TransmitLinkSpeed;  // or ReceiveLinkSpeed (typically same)
         
         // Cumulative traffic counters (octets = bytes)
-        stats.totalInOctets = ifRow.InOctets;
-        stats.totalOutOctets = ifRow.OutOctets;
+        stats.totalInOctets = ifaceRow.InOctets;
+        stats.totalOutOctets = ifaceRow.OutOctets;
         
         // Rate calculations (set to 0 initially, caller will use DeltaCalculator)
         stats.inBytesPerSec = 0;
         stats.outBytesPerSec = 0;
         
         // Optional packet-level stats (if available)
-        if (ifRow.InUcastPkts != 0 || ifRow.InNUcastPkts != 0) {
+        if (ifaceRow.InUcastPkts != 0 || ifaceRow.InNUcastPkts != 0) {
             stats.inPacketsPerSec = 0;  // Will be calculated by caller
         }
-        if (ifRow.OutUcastPkts != 0 || ifRow.OutNUcastPkts != 0) {
+        if (ifaceRow.OutUcastPkts != 0 || ifaceRow.OutNUcastPkts != 0) {
             stats.outPacketsPerSec = 0;  // Will be calculated by caller
         }
         
         // Error counters
-        if (ifRow.InErrors != 0) {
-            stats.inErrors = ifRow.InErrors;
+        if (ifaceRow.InErrors != 0) {
+            stats.inErrors = ifaceRow.InErrors;
         }
-        if (ifRow.OutErrors != 0) {
-            stats.outErrors = ifRow.OutErrors;
+        if (ifaceRow.OutErrors != 0) {
+            stats.outErrors = ifaceRow.OutErrors;
         }
         
         interfaces.push_back(stats);
