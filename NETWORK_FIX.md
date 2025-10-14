@@ -1,17 +1,23 @@
-# Network Monitoring Fix - Delta Calculation Implementation
+# Network & Disk I/O Monitoring Fix - Rate Calculation Implementation
 
 **Date**: 2025-10-14  
-**Issue**: Network and disk I/O rates always showing 0 bps/B/s  
-**Status**: ✅ **FIXED** (Awaiting Windows Testing)  
-**Commit**: `0da0676`
+**Issues**: 
+1. Network rates always showing 0 bps
+2. Disk I/O rates always showing 0 B/s (only busy % working)
+
+**Status**: ✅ **BOTH FIXED** (Awaiting Windows Testing)  
+**Commits**: 
+- `0da0676` - Network rate delta calculations
+- `b0c0b43` - Disk I/O rate usage from PDH
 
 ---
 
 ## Problem Description
 
-Network monitoring was reporting **0 bps for all interfaces** even during active network traffic (e.g., running speed tests). The same issue affected disk I/O rates.
+### Issue 1: Network Monitoring
+Network monitoring was reporting **0 bps for all interfaces** even during active network traffic (e.g., running speed tests).
 
-### User Report
+**User Report:**
 ```
 NET:  Ethernet < 0 bps  > 0 bps  (1.0 Gbps link)
 NET:  Ethernet < 0 bps  > 0 bps  (1.0 Gbps link)
@@ -20,11 +26,25 @@ NET:  Ethernet < 0 bps  > 0 bps  (1.0 Gbps link)
 
 Even with active traffic, rates never changed from 0.
 
+### Issue 2: Disk I/O Monitoring
+Disk I/O was reporting **0 B/s for read/write** even though busy percentage was updating correctly.
+
+**User Report:**
+```
+IO:   C: < 0 B/s  > 0 B/s  (3.5% busy)
+IO:   C: < 0 B/s  > 0 B/s  (9.8% busy)
+IO:   C: < 0 B/s  > 0 B/s  (16.8% busy)
+```
+
+Busy percentage changed but rates stayed at 0.
+
 ---
 
 ## Root Cause Analysis
 
-### The Design
+### Network Issue: Missing State Management
+
+#### The Design
 The WinHKMon architecture was designed with a clear separation of concerns:
 
 1. **Monitors** (NetworkMonitor, DiskMonitor) collect **cumulative counters**:
@@ -57,6 +77,40 @@ SystemMetrics collectMetrics(..., DeltaCalculator& deltaCalc) {
 ```
 
 **Result**: Rates stayed at the initial 0 value set by monitors.
+
+---
+
+### Disk Issue: Wrong API Usage
+
+#### The Problem
+**PDH disk counters work DIFFERENTLY than network interfaces!**
+
+| Data Source | Counter Type | Calculation Needed? |
+|------------|--------------|---------------------|
+| **Network** (`GetIfTable2`) | **Cumulative bytes** (totalInOctets, totalOutOctets) | ✅ YES - we calculate: `rate = delta / time` |
+| **Disk** (PDH) | **Instantaneous rates** (bytes/sec from PDH) | ❌ NO - PDH already calculated it! |
+
+**PDH Disk Counters:**
+- `\\PhysicalDisk(*)\\Disk Read Bytes/sec` ← **Already a RATE**
+- `\\PhysicalDisk(*)\\Disk Write Bytes/sec` ← **Already a RATE**
+- `\\PhysicalDisk(*)\\% Disk Time` ← Busy percentage (working correctly)
+
+#### The Bug
+1. **DiskMonitor.cpp line 189, 203**: Correctly gets rates from PDH ✅
+2. **DiskMonitor.cpp line 237-238**: Sets `totalBytesRead`/`totalBytesWritten` to **0** (no cumulative counters exist!)
+3. **main.cpp**: Tried to calculate rate from 0 counters: `rate = (0 - 0) / time = 0` ❌
+4. **Result**: Overwrote good PDH rates with 0
+
+```cpp
+// DiskMonitor.cpp (BEFORE FIX)
+stats.bytesReadPerSec = readValue.largeValue;  // ← Good value from PDH!
+
+// ... later ...
+stats.totalBytesRead = 0;  // ← No cumulative counter available
+
+// main.cpp (BEFORE FIX)
+disk.bytesReadPerSec = calculateRate(0, 0, elapsedSeconds);  // ← Overwrites with 0!
+```
 
 ---
 
@@ -162,36 +216,45 @@ if (elapsedSeconds > 0 && previousMetrics.network.has_value()) {
 }
 ```
 
-**Disk I/O Rates** (same pattern):
+**Disk I/O Rates** (different approach - use PDH rates directly):
 ```cpp
-for (auto& disk : disks) {
-    auto prevIt = std::find_if(...);
-    if (prevIt != previousMetrics.disks->end()) {
-        disk.bytesReadPerSec = static_cast<uint64_t>(
-            deltaCalc.calculateRate(disk.totalBytesRead, 
-                                   prevIt->totalBytesRead, 
-                                   elapsedSeconds));
-        disk.bytesWrittenPerSec = static_cast<uint64_t>(
-            deltaCalc.calculateRate(disk.totalBytesWritten, 
-                                    prevIt->totalBytesWritten, 
-                                    elapsedSeconds));
+// Disk rates come directly from PDH - don't recalculate!
+std::vector<DiskStats> disks = diskMonitor->getCurrentStats();
+
+// Only accumulate cumulative totals (integrate rates over time)
+if (elapsedSeconds > 0 && previousMetrics.disks.has_value()) {
+    for (auto& disk : disks) {
+        auto prevIt = std::find_if(...);
+        if (prevIt != previousMetrics.disks->end()) {
+            // Integrate: total = previous_total + (rate * time)
+            disk.totalBytesRead = prevIt->totalBytesRead + 
+                static_cast<uint64_t>(disk.bytesReadPerSec * elapsedSeconds);
+            disk.totalBytesWritten = prevIt->totalBytesWritten + 
+                static_cast<uint64_t>(disk.bytesWrittenPerSec * elapsedSeconds);
+        }
+        // NOTE: bytesReadPerSec and bytesWrittenPerSec already set by PDH!
     }
 }
 ```
+
+**Key Difference:**
+- **Network**: Calculate rate FROM cumulative → `rate = delta / time`
+- **Disk**: Calculate cumulative FROM rate → `total = sum(rate * time)`
 
 ---
 
 ## Changes Summary
 
-| File | Lines Changed | Description |
-|------|---------------|-------------|
-| `src/WinHKMon/main.cpp` | +98, -8 | Delta calculation implementation |
+| Commit | File | Lines Changed | Description |
+|--------|------|---------------|-------------|
+| `0da0676` | `src/WinHKMon/main.cpp` | +98, -8 | Network delta calculations + state management |
+| `b0c0b43` | `src/WinHKMon/main.cpp` | +11, -11 | Disk I/O - use PDH rates directly |
 
-**Total**: 106 lines modified
+**Total**: 109 insertions, 19 deletions (117 lines modified)
 
 **Key Additions:**
 - Network rate calculation loop: 28 lines
-- Disk I/O rate calculation loop: 25 lines  
+- Disk I/O accumulation logic: 18 lines (REVISED from 25)
 - State management in singleShotMode: 8 lines
 - State management in continuousMode: 15 lines
 - Elapsed time calculation: 5 lines
@@ -257,8 +320,9 @@ NET:  Ethernet < 389.2 Mbps  > 46.7 Mbps  (1.0 Gbps link)
 ### Disk I/O During File Copy
 ```
 IO:   C: < 125.3 MB/s  > 3.2 MB/s  (2.5% busy)
+IO:   _Total < 125.3 MB/s  > 3.2 MB/s  (2.5% busy)
 IO:   C: < 142.7 MB/s  > 3.8 MB/s  (3.1% busy)
-IO:   C: < 131.1 MB/s  > 3.5 MB/s  (2.8% busy)
+IO:   _Total < 142.7 MB/s  > 3.8 MB/s  (3.1% busy)
 ```
 
 ### Idle System
