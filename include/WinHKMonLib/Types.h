@@ -59,13 +59,17 @@ struct MemoryStats {
 };
 
 /**
- * @brief Disk I/O statistics per physical drive
+ * @brief Disk statistics per physical drive (space + I/O)
  */
 struct DiskStats {
-    std::string deviceName;                  ///< Physical disk identifier (e.g., "0 C:", "1 D:")
-    uint64_t totalSizeBytes;                 ///< Disk capacity
+    std::string deviceName;                  ///< Physical disk identifier (e.g., "C:", "D:")
     
-    // Real-time rates
+    // Disk space (for DISK metric)
+    uint64_t totalSizeBytes;                 ///< Disk capacity
+    uint64_t usedBytes;                      ///< Used space
+    uint64_t freeBytes;                      ///< Available space
+    
+    // Real-time I/O rates (for IO metric)
     uint64_t bytesReadPerSec;                ///< Current read rate
     uint64_t bytesWrittenPerSec;             ///< Current write rate
     double percentBusy;                      ///< Disk active time percentage (0.0 - 100.0)
@@ -178,7 +182,8 @@ struct CliOptions {
     // Metrics to monitor
     bool showCpu = false;                    ///< Monitor CPU
     bool showMemory = false;                 ///< Monitor memory
-    bool showDisk = false;                   ///< Monitor disk I/O
+    bool showDiskSpace = false;              ///< Monitor disk space (capacity/used/free)
+    bool showDiskIO = false;                 ///< Monitor disk I/O (read/write rates)
     bool showNetwork = false;                ///< Monitor network
     bool showTemp = false;                   ///< Monitor temperature
     

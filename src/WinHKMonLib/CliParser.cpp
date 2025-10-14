@@ -32,7 +32,8 @@ USAGE:
 METRICS:
   CPU           Monitor CPU usage and frequency
   RAM           Monitor memory (RAM and page file)
-  DISK, IO      Monitor disk I/O
+  DISK          Monitor disk space (capacity, used, free)
+  IO            Monitor disk I/O (read/write rates, busy %)
   NET           Monitor network traffic
   TEMP          Monitor temperature (requires admin)
 
@@ -96,8 +97,11 @@ CliOptions parseArguments(int argc, char* argv[]) {
         else if (argUpper == "RAM") {
             opts.showMemory = true;
         }
-        else if (argUpper == "DISK" || argUpper == "IO") {
-            opts.showDisk = true;
+        else if (argUpper == "DISK") {
+            opts.showDiskSpace = true;
+        }
+        else if (argUpper == "IO") {
+            opts.showDiskIO = true;
         }
         else if (argUpper == "NET") {
             opts.showNetwork = true;
@@ -194,10 +198,10 @@ CliOptions parseArguments(int argc, char* argv[]) {
     
     // Validation: At least one metric must be selected (unless help/version)
     if (!opts.showHelp && !opts.showVersion) {
-        if (!opts.showCpu && !opts.showMemory && !opts.showDisk && 
+        if (!opts.showCpu && !opts.showMemory && !opts.showDiskSpace && !opts.showDiskIO &&
             !opts.showNetwork && !opts.showTemp) {
             throw std::invalid_argument(
-                "At least one metric must be specified (CPU, RAM, DISK, NET, TEMP). "
+                "At least one metric must be specified (CPU, RAM, DISK, IO, NET, TEMP). "
                 "Use --help for usage information.");
         }
     }

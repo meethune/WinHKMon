@@ -20,6 +20,15 @@
 
 namespace {
     /**
+     * @brief Disk space information
+     */
+    struct DiskSpaceInfo {
+        uint64_t totalBytes;
+        uint64_t freeBytes;
+        uint64_t usedBytes;
+    };
+
+    /**
      * Extract user-friendly disk name from PDH disk name
      * PDH format: "0 C:", "1 D:", "_Total"
      * Extract to: "C:", "D:", "_Total"
@@ -206,12 +215,17 @@ std::vector<DiskStats> DiskMonitor::getCurrentStats() {
             stats.percentBusy = 0.0;
         }
         
-        // Get disk size (extract drive letter from instance name)
+        // Get disk space information (extract drive letter from instance name)
         std::string driveLetter = extractDriveLetter(diskName);
         if (!driveLetter.empty()) {
-            stats.totalSizeBytes = getDiskSize(driveLetter);
+            DiskSpaceInfo spaceInfo = getDiskSpace(driveLetter);
+            stats.totalSizeBytes = spaceInfo.totalBytes;
+            stats.freeBytes = spaceInfo.freeBytes;
+            stats.usedBytes = spaceInfo.usedBytes;
         } else {
             stats.totalSizeBytes = 0;
+            stats.freeBytes = 0;
+            stats.usedBytes = 0;
         }
         
         // Cumulative counters (these would be tracked by StateManager in real usage)
@@ -274,7 +288,7 @@ void DiskMonitor::addDiskCounters(const std::string& diskInstance) {
     counters_[diskInstance] = counters;
 }
 
-uint64_t DiskMonitor::getDiskSize(const std::string& driveLetter) {
+DiskSpaceInfo DiskMonitor::getDiskSpace(const std::string& driveLetter) {
     // Convert to wide string with backslash (e.g., "C:" -> "C:\\")
     std::wstring wDrive(driveLetter.begin(), driveLetter.end());
     if (wDrive.back() != L'\\') {
@@ -291,10 +305,13 @@ uint64_t DiskMonitor::getDiskSize(const std::string& driveLetter) {
             &totalBytes,
             &totalFreeBytes
         )) {
-        return totalBytes.QuadPart;
+        uint64_t total = totalBytes.QuadPart;
+        uint64_t free = totalFreeBytes.QuadPart;
+        uint64_t used = (total > free) ? (total - free) : 0;
+        return DiskSpaceInfo{total, free, used};
     }
     
-    return 0;
+    return DiskSpaceInfo{0, 0, 0};
 }
 
 std::string DiskMonitor::extractDriveLetter(const std::string& diskInstance) {

@@ -95,8 +95,8 @@ SystemMetrics collectMetrics(const CliOptions& options,
         }
     }
     
-    // Collect disk stats
-    if (options.showDisk && diskMonitor != nullptr) {
+    // Collect disk stats (if either DISK or IO is requested)
+    if ((options.showDiskSpace || options.showDiskIO) && diskMonitor != nullptr) {
         try {
             metrics.disks = diskMonitor->getCurrentStats();
         } catch (const std::exception& e) {
@@ -139,11 +139,11 @@ int singleShotMode(const CliOptions& options) {
             networkMonitor->initialize();
         }
         
-        if (options.showDisk) {
+        if (options.showDiskSpace || options.showDiskIO) {
             diskMonitor = new DiskMonitor();
             diskMonitor->initialize();
             
-            // Wait for first sample (PDH requires two samples)
+            // Wait for first sample (PDH requires two samples for I/O rates)
             std::this_thread::sleep_for(std::chrono::milliseconds(1100));
         }
         
@@ -222,11 +222,11 @@ int continuousMode(const CliOptions& options) {
             networkMonitor->initialize();
         }
         
-        if (options.showDisk) {
+        if (options.showDiskSpace || options.showDiskIO) {
             diskMonitor = new DiskMonitor();
             diskMonitor->initialize();
             
-            // Wait for first sample
+            // Wait for first sample (PDH requires two samples for I/O rates)
             std::this_thread::sleep_for(std::chrono::milliseconds(1100));
         }
         

@@ -17,6 +17,9 @@
 
 namespace WinHKMon {
 
+// Forward declaration
+struct DiskSpaceInfo;
+
 /**
  * @brief Disk I/O monitor using PDH counters
  * 
@@ -99,12 +102,12 @@ private:
     void addDiskCounters(const std::string& diskInstance);
     
     /**
-     * @brief Get disk size for a drive letter
+     * @brief Get disk space information for a drive letter
      * 
      * @param driveLetter Drive letter (e.g., "C:")
-     * @return Total disk size in bytes (0 if unavailable)
+     * @return DiskSpaceInfo with total, free, and used bytes
      */
-    uint64_t getDiskSize(const std::string& driveLetter);
+    DiskSpaceInfo getDiskSpace(const std::string& driveLetter);
     
     /**
      * @brief Extract drive letter from disk instance name
