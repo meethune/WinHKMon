@@ -428,7 +428,20 @@ See [tasks.md](/.specify/features/winhkmon-system-resource-monitoring/tasks.md) 
 
 ## 📝 License
 
-[License TBD - To be added]
+This project is licensed under the **GNU General Public License v3.0** (GPLv3).
+
+You are free to:
+- ✅ Use the software for any purpose
+- ✅ Study and modify the source code
+- ✅ Distribute copies of the software
+- ✅ Distribute modified versions
+
+**Requirements:**
+- 🔒 Source code must be made available when distributing the software
+- 🔒 Modifications must also be licensed under GPLv3
+- 🔒 Changes must be documented
+
+See the [LICENSE](LICENSE) file for the complete license text, or visit [https://www.gnu.org/licenses/gpl-3.0.html](https://www.gnu.org/licenses/gpl-3.0.html).
 
 ---
 
