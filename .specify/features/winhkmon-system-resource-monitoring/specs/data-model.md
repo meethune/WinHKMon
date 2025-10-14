@@ -139,15 +139,19 @@ struct MemoryStats {
 
 ### DiskStats
 
-**Purpose**: Disk I/O statistics per physical drive
+**Purpose**: Disk space and I/O statistics per physical drive
 
 **Structure**:
 ```cpp
 struct DiskStats {
     std::string deviceName;
-    uint64_t totalSizeBytes;
     
-    // Real-time rates
+    // Disk space information (DISK metric)
+    uint64_t totalSizeBytes;
+    uint64_t usedBytes;
+    uint64_t freeBytes;
+    
+    // Real-time I/O rates (IO metric)
     uint64_t bytesReadPerSec;
     uint64_t bytesWrittenPerSec;
     double percentBusy;
@@ -165,8 +169,10 @@ struct DiskStats {
 **Fields**:
 | Field | Type | Description | Validation | Source Requirement |
 |-------|------|-------------|------------|-------------------|
-| deviceName | `string` | Physical disk identifier | Non-empty, e.g., "0 C:", "1 D:" | FR-3.1 |
+| deviceName | `string` | Drive letter | Non-empty, e.g., "C:", "D:", "_Total" | FR-3.1 |
 | totalSizeBytes | `uint64_t` | Disk capacity | > 0 | FR-3.5 |
+| usedBytes | `uint64_t` | Used disk space | ≥ 0, ≤ totalSizeBytes | FR-3.5 |
+| freeBytes | `uint64_t` | Available disk space | ≥ 0, ≤ totalSizeBytes | FR-3.5 |
 | bytesReadPerSec | `uint64_t` | Current read rate | ≥ 0 | FR-3.4 |
 | bytesWrittenPerSec | `uint64_t` | Current write rate | ≥ 0 | FR-3.4 |
 | percentBusy | `double` | Disk active time % | 0.0 ≤ value ≤ 100.0 | FR-3.6 |
@@ -176,9 +182,11 @@ struct DiskStats {
 | writesPerSec | `optional<uint64_t>` | Write operations/sec | ≥ 0 | Optional |
 
 **Invariants**:
-- `deviceName` uniquely identifies physical disk
+- `deviceName` uniquely identifies drive (extracted from PDH counter name like "0 C:")
+- `usedBytes + freeBytes ≈ totalSizeBytes` (within filesystem overhead)
 - `totalBytesRead` and `totalBytesWritten` are monotonically increasing
 - `bytesReadPerSec` and `bytesWrittenPerSec` calculated from deltas
+- "_Total" entry aggregates I/O across all disks but has 0 for space fields
 
 ---
 
@@ -346,7 +354,8 @@ DISK_1_WRITE 8888888888888
 struct CliOptions {
     bool showCpu;
     bool showMemory;
-    bool showDisk;
+    bool showDiskSpace;  // DISK command
+    bool showDiskIO;     // IO command
     bool showNetwork;
     bool showTemp;
     
@@ -370,7 +379,8 @@ struct CliOptions {
 |-------|------|-------------|---------|------------|-------------------|
 | showCpu | `bool` | Monitor CPU | false | - | FR-8.1 |
 | showMemory | `bool` | Monitor memory | false | - | FR-8.1 |
-| showDisk | `bool` | Monitor disk I/O | false | - | FR-8.1 |
+| showDiskSpace | `bool` | Monitor disk space (capacity/used/free) | false | - | FR-8.1 (DISK) |
+| showDiskIO | `bool` | Monitor disk I/O (read/write rates) | false | - | FR-8.1 (IO) |
 | showNetwork | `bool` | Monitor network | false | - | FR-8.1 |
 | showTemp | `bool` | Monitor temperature | false | - | FR-8.1 |
 | networkInterface | `string` | Specific interface | "" (auto) | Must match existing interface | FR-8.2 |
@@ -383,9 +393,10 @@ struct CliOptions {
 | showVersion | `bool` | Display version | false | - | FR-8.7 |
 
 **Validation Rules**:
-- At least one of showCpu, showMemory, showDisk, showNetwork, showTemp must be true (unless showHelp or showVersion)
+- At least one of showCpu, showMemory, showDiskSpace, showDiskIO, showNetwork, showTemp must be true (unless showHelp or showVersion)
 - If `networkInterface` non-empty, must match existing interface name
 - `intervalSeconds` must be in range [0.1, 3600]
+- `showDiskSpace` and `showDiskIO` can be used independently or together
 
 ---
 

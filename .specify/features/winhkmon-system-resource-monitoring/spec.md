@@ -155,18 +155,22 @@ WinHKMon addresses the need for a lightweight, scriptable system monitoring solu
 
 ---
 
-### FR-3: Disk I/O Monitoring
+### FR-3: Disk Monitoring
 
-**What:** Report disk read/write statistics for physical drives.
+**What:** Report disk space and I/O statistics for physical drives.
 
-**Why:** Users need to identify I/O bottlenecks, monitor disk health, and track data transfer rates.
+**Why:** Users need to monitor disk space availability AND identify I/O bottlenecks separately.
+
+**Note:** As of v1.0, disk monitoring is split into two separate metrics:
+- **DISK**: Disk space information (total/used/free capacity)
+- **IO**: Disk I/O performance (read/write rates, busy percentage)
 
 **Requirements:**
 
-**FR-3.1** MUST report disk device names
-- **Acceptance Criteria**: List of physical disks (e.g., "PhysicalDrive0", "nvme0n1")
-- **Constraint**: Exclude partitions, show only physical devices
-- **Why**: Clear device identification
+**FR-3.1** MUST report disk drive identifiers
+- **Acceptance Criteria**: Drive letters (e.g., "C:", "D:") extracted from PDH counter names
+- **Constraint**: Shows physical drives with drive letters; "_Total" aggregates I/O statistics
+- **Why**: Clear device identification using Windows-standard notation
 
 **FR-3.2** MUST report total bytes read per disk
 - **Acceptance Criteria**: Cumulative bytes read since boot
@@ -183,9 +187,11 @@ WinHKMon addresses the need for a lightweight, scriptable system monitoring solu
 - **Calculation**: Delta between current and previous sample / time elapsed
 - **Why**: Real-time performance monitoring
 
-**FR-3.5** MUST report disk size
-- **Acceptance Criteria**: Total disk capacity in GB or TB
-- **Why**: Provide context for usage statistics
+**FR-3.5** MUST report disk space information
+- **Acceptance Criteria**: Total capacity, used space, and free space in GB or TB
+- **Calculation**: Uses `GetDiskFreeSpaceExW()` API with drive letter
+- **Why**: Monitor storage capacity and availability
+- **Note**: "_Total" entry shows 0 for space fields (no drive letter to query)
 
 **FR-3.6** SHOULD report disk I/O time / busy percentage
 - **Acceptance Criteria**: Percentage of time disk is servicing requests (0-100%)
@@ -290,9 +296,12 @@ WinHKMon addresses the need for a lightweight, scriptable system monitoring solu
   ```
   CPU:  23.5%  2.4 GHz
   RAM:  8192M available
-  NET:  15.3 Mbps ↓  2.1 Mbps ↑
+  DISK: C: 43.0 GB / 127.1 GB (33.8% used, 84.1 GB free)
+  IO:   C: < 0 B/s  > 81.8 KB/s  (0.2% busy)
+  NET:  Ethernet < 15.3 Mbps  > 2.1 Mbps
   TEMP: 45°C
   ```
+- **Note**: Uses ASCII symbols (`<` for download/read, `>` for upload/write) for universal console compatibility
 - **Why**: Quick visual inspection
 
 **FR-6.2** MUST support detailed text output
@@ -370,10 +379,17 @@ WinHKMon addresses the need for a lightweight, scriptable system monitoring solu
 **Requirements:**
 
 **FR-8.1** MUST support selective metric monitoring
-- **Syntax**: `WinHKMon [NET] [CPU] [RAM] [TEMP] [IO]`
+- **Syntax**: `WinHKMon [CPU] [RAM] [DISK] [IO] [NET] [TEMP]`
 - **Behavior**: Only monitor specified metrics
+- **Metric Types**:
+  - `CPU`: CPU usage and frequency
+  - `RAM`: Physical and virtual memory
+  - `DISK`: Disk space (capacity, used, free) - like `df` on Linux
+  - `IO`: Disk I/O rates (read/write, busy %) - like `iostat` on Linux
+  - `NET`: Network traffic statistics
+  - `TEMP`: Temperature sensors
 - **Default**: If no metrics specified, show usage help
-- **Why**: User may only need specific metrics
+- **Why**: User may only need specific metrics; DISK and IO separated for clarity
 
 **FR-8.2** MUST support specific network interface selection
 - **Syntax**: `WinHKMon <interface_name>` or `WinHKMon --interface "Ethernet"`
@@ -543,9 +559,10 @@ WinHKMon addresses the need for a lightweight, scriptable system monitoring solu
 - **Example**: Running without arguments shows help, not cryptic error
 - **Example**: Auto-select primary network interface
 
-**NFR-5.3** Output SHOULD use Unicode symbols where appropriate
-- **Examples**: ↓↑ for network, ⚙ for CPU, ⚡ for disk I/O
-- **Fallback**: ASCII alternatives if console doesn't support Unicode
+**NFR-5.3** Output MUST use ASCII symbols for universal compatibility
+- **Symbols**: `<` for download/read, `>` for upload/write
+- **Rationale**: Windows console encoding issues with UTF-8 symbols (↓↑ display as garbled characters)
+- **Note**: Future versions may detect console encoding and use Unicode when safe
 
 **NFR-5.4** Documentation MUST include examples
 - **Coverage**: Common use cases, troubleshooting, scripting integration

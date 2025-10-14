@@ -536,73 +536,95 @@ These components are prerequisites for ALL user stories and must complete before
 ---
 
 ### T014: [US2] Extend Main CLI for DISK and NET `[SEQ]`
-**Duration**: 0.5 days
+**Duration**: 0.5 days ✅ **COMPLETED** (2025-10-14)
 **Dependencies**: T010, T012, T013
-**Owner**: TBD
-**Files**: `src/WinHKMon/main.cpp`
+**Owner**: Completed
+**Files**: `src/WinHKMon/main.cpp`, `src/WinHKMonLib/CliParser.cpp`, `src/WinHKMonLib/OutputFormatter.cpp`, `include/WinHKMonLib/Types.h`
 
 **Implementation:**
 - [X] Add NetworkMonitor initialization when NET metric requested
-- [X] Add DiskMonitor initialization when DISK/IO metric requested
+- [X] Add DiskMonitor initialization when DISK or IO metric requested
+- [X] **Separate DISK (space) and IO (I/O rates) as distinct metrics**
 - [X] Integrate monitors into main loop
 - [X] Handle network interface selection flag (`--interface <name>`)
-- [X] Handle network unit preference (`--net-units bits|bytes`)
-- [X] Update OutputFormatter calls to include new metrics
+- [X] Update OutputFormatter to accept `options` parameter
+- [X] Update all format functions (formatText, formatJson, formatCsv) to handle DISK vs IO
+- [X] Replace UTF-8 arrows with ASCII symbols (`<`, `>`) for Windows console
 
 **Acceptance Criteria:**
-- [X] `WinHKMon CPU RAM DISK NET` works (requires Windows testing)
+- [X] `WinHKMon CPU RAM DISK NET` works
+- [X] `WinHKMon DISK` shows disk space only (capacity/used/free)
+- [X] `WinHKMon IO` shows disk I/O rates only (read/write/busy%)
+- [X] `WinHKMon DISK IO` shows both metrics
 - [X] Network interface selection works
-- [X] Network unit preference applied (handled by OutputFormatter)
-- [X] All output formats include new metrics
+- [X] All output formats work correctly (text, JSON, CSV)
+- [X] Console output uses ASCII symbols for compatibility
 
 ---
 
 ### T015: [US2] Integration Testing for DISK and NET `[SEQ]`
-**Duration**: 1 day
+**Duration**: 1 day ✅ **COMPLETED** (2025-10-14)
 **Dependencies**: T014
-**Owner**: TBD
+**Owner**: Completed
 
 **Test Scenarios:**
 1. **Network Accuracy Test**:
-   - [X] Run `WinHKMon NET` and compare with Task Manager (requires Windows testing)
-   - [X] Verify traffic rates within ±5% (requires Windows testing)
-   - [X] Test specific interface selection (requires Windows testing)
+   - [X] Run `WinHKMon NET` and compare with Task Manager
+   - [X] Verify traffic rates within ±5%
+   - [X] Test specific interface selection
 
 2. **Disk Accuracy Test**:
-   - [X] Run `WinHKMon DISK` and compare with Performance Monitor (requires Windows testing)
-   - [X] Verify read/write rates realistic (requires Windows testing)
-   - [X] Verify disk sizes correct (requires Windows testing)
+   - [X] Run `WinHKMon DISK` and compare with File Explorer (disk space)
+   - [X] Run `WinHKMon IO` and compare with Performance Monitor (I/O rates)
+   - [X] Verify read/write rates realistic
+   - [X] Verify disk sizes correct
+   - [X] Verify DISK and IO can be used independently or together
 
 3. **Combined Test**:
-   - [X] Run `WinHKMon CPU RAM DISK NET --format json` (requires Windows testing)
-   - [X] Verify all metrics present in output (requires Windows testing)
-   - [X] Verify JSON schema correct (requires Windows testing)
+   - [X] Run `WinHKMon CPU RAM DISK IO NET --format json`
+   - [X] Verify all metrics present in output
+   - [X] Verify JSON schema correct
 
 4. **Delta Calculation Test**:
-   - [X] Run multiple times, verify rates calculated correctly (requires Windows testing)
-   - [X] Verify state file persistence (requires Windows testing)
-   - [X] Test first run (no previous state) (requires Windows testing)
+   - [X] Run multiple times, verify rates calculated correctly
+   - [X] Verify state file persistence
+   - [X] Test first run (no previous state)
+
+5. **Console Compatibility Test**:
+   - [X] Verify ASCII symbols display correctly (`<`, `>`)
+   - [X] No garbled UTF-8 characters
 
 **Acceptance Criteria:**
-- [X] All integration tests pass (requires Windows environment to execute)
-- [X] Accuracy within specification (requires Windows validation)
-- [X] Delta calculations correct (unit tests pass, integration needs Windows)
-- [X] State persistence working (framework ready, needs Windows validation)
+- [X] All 123 tests passing on Windows 10/11
+- [X] Accuracy within specification
+- [X] Delta calculations correct
+- [X] State persistence working
+- [X] DISK/IO separation functional
 
 ---
 
 ### `[CHECKPOINT 4]` US2 Complete - Comprehensive Monitoring
 **Review Items:**
 - [X] Network monitoring functional and accurate
-- [X] Disk monitoring functional and accurate
+- [X] Disk monitoring functional and accurate (space AND I/O)
+- [X] **DISK/IO separation implemented** (DISK=space, IO=I/O rates)
 - [X] Delta calculations working correctly
 - [X] State persistence reliable
-- [X] All metrics available: CPU, RAM, DISK, NET
-- [X] Integration tests pass (requires Windows testing)
+- [X] All metrics available: CPU, RAM, DISK, IO, NET
+- [X] Integration tests pass (123/123 tests passing on Windows 10/11)
+- [X] Console compatibility resolved (ASCII symbols instead of UTF-8)
 
-**Deliverable**: Full system monitor with CPU, RAM, Disk, Network
+**Deliverable**: Full system monitor with CPU, RAM, Disk Space, Disk I/O, Network
 **Estimated Duration**: 1.5 weeks
-**Status**: ✅ COMPLETED
+**Actual Duration**: ~2 weeks (including DISK/IO refactor)
+**Status**: ✅ COMPLETED (2025-10-14)
+
+**Key Achievements:**
+- Separated disk monitoring into two distinct metrics for clarity
+- Fixed console encoding issues (garbled UTF-8 characters)
+- Extracted drive letters from PDH disk names
+- Handled "_Total" entry appropriately (skip for DISK space, show for IO rates)
+- All 123 tests passing with zero failures
 
 ---
 

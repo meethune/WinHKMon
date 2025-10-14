@@ -203,9 +203,9 @@ struct MemoryStats {
 
 ### Component 3: DiskMonitor
 
-**Responsibility**: Collect disk I/O statistics
+**Responsibility**: Collect disk space and I/O statistics
 
-**Technical Approach**: PDH Counters
+**Technical Approach**: PDH Counters for I/O + `GetDiskFreeSpaceExW()` for space
 
 **Implementation**:
 ```cpp
@@ -224,24 +224,31 @@ private:
         PDH_HCOUNTER bytesWritten;
         PDH_HCOUNTER percentBusy;
     };
+    
+    std::string extractDriveLetter(const std::wstring& diskName);
+    DiskSpaceInfo getDiskSpace(const std::string& driveLetter);
 };
 ```
 
 **APIs Used:**
-- PDH counters:
+- PDH counters (wide-char versions):
+  - `PdhEnumObjectItemsW()` - Enumerate disks
+  - `PdhAddCounterW()` - Add counters
   - `"\\PhysicalDisk(*)\\Disk Read Bytes/sec"`
   - `"\\PhysicalDisk(*)\\Disk Write Bytes/sec"`
   - `"\\PhysicalDisk(*)\\% Disk Time"`
-- `GetDiskFreeSpaceEx()` - For disk size
+- `GetDiskFreeSpaceExW()` - For disk space (total, free, used)
 
 **Data Structure:**
 ```cpp
 struct DiskStats {
-    std::string deviceName;          // e.g., "0 C:", "1 D:"
+    std::string deviceName;          // e.g., "C:", "D:", "_Total"
     uint64_t totalSizeBytes;
-    uint64_t bytesReadPerSec;
-    uint64_t bytesWrittenPerSec;
-    double percentBusy;
+    uint64_t usedBytes;              // NEW: for DISK metric
+    uint64_t freeBytes;              // NEW: for DISK metric
+    uint64_t bytesReadPerSec;        // For IO metric
+    uint64_t bytesWrittenPerSec;     // For IO metric
+    double percentBusy;              // For IO metric
 
     // Cumulative (requires state persistence)
     uint64_t totalBytesRead;
@@ -249,7 +256,12 @@ struct DiskStats {
 };
 ```
 
-**Rationale**: PDH provides per-disk statistics automatically. Consistent with CPU monitoring approach.
+**Drive Letter Extraction**:
+- PDH returns disk names like "0 C:", "1 D:", "_Total"
+- Extract drive letter (e.g., "C:") for `GetDiskFreeSpaceExW()` call
+- "_Total" entry aggregates I/O but has 0 for space fields
+
+**Rationale**: PDH provides per-disk I/O statistics automatically. `GetDiskFreeSpaceExW()` provides accurate space information. Separation of space (DISK) and I/O (IO) metrics provides clarity for users.
 
 ---
 
@@ -434,7 +446,8 @@ struct SystemMetrics {
 struct CliOptions {
     bool showCpu = false;
     bool showMemory = false;
-    bool showDisk = false;
+    bool showDiskSpace = false;  // DISK command
+    bool showDiskIO = false;     // IO command
     bool showNetwork = false;
     bool showTemp = false;
 
@@ -457,6 +470,15 @@ CliOptions parseArguments(int argc, char* argv[]);
 # Show CPU and RAM
 WinHKMon CPU RAM
 
+# Show disk space only
+WinHKMon DISK
+
+# Show disk I/O only
+WinHKMon IO
+
+# Show both disk space and I/O
+WinHKMon DISK IO
+
 # Show network stats for specific interface
 WinHKMon "Ethernet 2"
 
@@ -464,13 +486,13 @@ WinHKMon "Ethernet 2"
 WinHKMon CPU RAM TEMP --continuous --interval 5
 
 # JSON output for scripting
-WinHKMon CPU RAM --format json
+WinHKMon CPU RAM DISK IO --format json
 
 # Single-line output (status bar mode)
 WinHKMon CPU RAM NET LINE
 
 # All metrics
-WinHKMon CPU RAM DISK NET TEMP
+WinHKMon CPU RAM DISK IO NET TEMP
 
 # Help
 WinHKMon --help
@@ -493,14 +515,17 @@ WinHKMon --help
 ```
 CPU:  23.5%  2.4 GHz
 RAM:  8192M available
-DISK: sda ↑ 15.3 MB/s  ↓ 2.1 MB/s
-NET:  eth0 ↑ 2.1 Mbps  ↓ 15.3 Mbps
+DISK: C: 43.0 GB / 127.1 GB (33.8% used, 84.1 GB free)
+IO:   C: < 0 B/s  > 81.8 KB/s  (0.2% busy)
+NET:  Ethernet < 15.3 Mbps  > 2.1 Mbps
 TEMP: 45°C
 ```
 
+**Note**: Uses ASCII symbols (`<` for read/download, `>` for write/upload) for Windows console compatibility.
+
 **Single-Line Mode** (`LINE` flag):
 ```
-23.5% 2.4GHz  8192M  sda:15.3MB/s  eth0:2.1Mbps↑15.3Mbps↓  45°C
+23.5% 2.4GHz  8192M  C:43GB/127GB  eth0:<15.3Mbps>2.1Mbps  45°C
 ```
 
 ### JSON Output Format
