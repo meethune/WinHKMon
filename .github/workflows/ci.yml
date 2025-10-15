@@ -140,6 +140,15 @@ jobs:
           
           Write-Host "✅ Executable validation passed!"
 
+      - name: Upload Binary Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: WinHKMon-${{ matrix.build_type }}-${{ matrix.architecture }}
+          path: |
+            build/${{ matrix.build_type }}/WinHKMon.exe
+            README.md
+          retention-days: 30
+
       - name: Upload Test Results
         if: always()
         uses: actions/upload-artifact@v4

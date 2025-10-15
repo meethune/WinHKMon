@@ -44,6 +44,67 @@ jobs:
         with:
           msbuild-architecture: x64
 
+      - name: Install .NET Framework SDK
+        shell: pwsh
+        run: |
+          Write-Host "Installing .NET Framework 4.7.2 SDK for C++/CLI compilation..."
+          # Install 4.7.2 to match CMakeLists.txt primary search path
+          choco install netfx-4.7.2-devpack -y
+          if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Failed to install 4.7.2 via Chocolatey, trying 4.8..."
+            choco install netfx-4.8-devpack -y
+            if ($LASTEXITCODE -ne 0) {
+              Write-Warning "Failed to install via Chocolatey, checking if already available..."
+              # Check if .NET Framework reference assemblies exist (either 4.7.2 or 4.8)
+              $netfx472Path = "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.7.2"
+              $netfx48Path = "C:\Program Files (x86)\Reference Assemblies\Microsoft\Framework\.NETFramework\v4.8"
+              if (Test-Path $netfx472Path) {
+                Write-Host "✅ .NET Framework 4.7.2 reference assemblies found"
+              } elseif (Test-Path $netfx48Path) {
+                Write-Host "✅ .NET Framework 4.8 reference assemblies found"
+              } else {
+                Write-Error ".NET Framework SDK not available"
+                exit 1
+              }
+            } else {
+              Write-Host "✅ .NET Framework 4.8 SDK installed"
+            }
+          } else {
+            Write-Host "✅ .NET Framework 4.7.2 SDK installed"
+          }
+
+      - name: Download LibreHardwareMonitorLib
+        shell: pwsh
+        run: |
+          Write-Host "Downloading LibreHardwareMonitorLib.dll..."
+          $url = "https://github.com/LibreHardwareMonitor/LibreHardwareMonitor/releases/download/v0.9.3/LibreHardwareMonitor-net472.zip"
+          $zipPath = "lhm.zip"
+          $extractPath = "lhm_temp"
+          
+          # Download
+          Invoke-WebRequest -Uri $url -OutFile $zipPath
+          
+          # Extract
+          Expand-Archive -Path $zipPath -DestinationPath $extractPath -Force
+          
+          # Create lib directory if it doesn't exist
+          New-Item -ItemType Directory -Force -Path lib | Out-Null
+          
+          # Copy DLL to lib directory
+          Copy-Item "$extractPath/LibreHardwareMonitorLib.dll" lib/
+          
+          # Verify
+          if (Test-Path "lib/LibreHardwareMonitorLib.dll") {
+            Write-Host "✅ LibreHardwareMonitorLib.dll ready"
+          } else {
+            Write-Error "Failed to download LibreHardwareMonitorLib.dll"
+            exit 1
+          }
+          
+          # Cleanup
+          Remove-Item $zipPath -Force
+          Remove-Item $extractPath -Recurse -Force
+
       - name: Configure Build Environment
         shell: pwsh
         run: |
