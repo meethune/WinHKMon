@@ -180,10 +180,17 @@ TEST(TempMonitorTest, TemperatureValuesAreRealistic) {
     auto stats = monitor.getCurrentStats();
     ASSERT_TRUE(stats.has_value());
     
-    // Typical idle temperature range: 20-80°C
-    // Under load could be higher but shouldn't exceed 100°C normally
     int maxTemp = stats->maxCpuTempCelsius;
     
+    // Skip if temperature is clearly invalid (0°C or negative)
+    // This happens on VMs or systems without real temperature sensors
+    if (maxTemp <= 0) {
+        GTEST_SKIP() << "Invalid temperature reading (" << maxTemp 
+                     << "°C), likely running on VM without real sensors";
+    }
+    
+    // Typical idle temperature range: 20-80°C
+    // Under load could be higher but shouldn't exceed 100°C normally
     EXPECT_GE(maxTemp, 20) << "Temperature too low, sensor may be incorrect";
     EXPECT_LE(maxTemp, 100) << "Temperature very high, possible thermal issue";
 }
