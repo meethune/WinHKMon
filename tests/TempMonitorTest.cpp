@@ -11,7 +11,7 @@
  */
 
 #include <gtest/gtest.h>
-#include "TempMonitor.h"
+#include "WinHKMonLib/TempMonitor.h"
 
 using namespace WinHKMon;
 

@@ -22,18 +22,19 @@
  */
 
 #pragma managed(push, off)
-#include "TempMonitor.h"
+#include "WinHKMonLib/TempMonitor.h"
 #include <Windows.h>
 #include <sddl.h>
 #include <algorithm>
 #include <vector>
 #pragma managed(pop)
 
-// C++/CLI includes for LibreHardwareMonitor integration
-#using <System.dll>
-#using <mscorlib.dll>
+// C++/CLI includes - System namespaces are automatically available with /clr
 using namespace System;
 using namespace System::Collections::Generic;
+
+// Need gcroot to hold managed objects in native classes
+#include <vcclr.h>
 
 namespace WinHKMon {
 
@@ -52,7 +53,7 @@ bool AdminPrivileges::IsRunningAsAdmin() {
         &ntAuthority,
         2,
         SECURITY_BUILTIN_DOMAIN_RID,
-        SECURITY_LOCAL_RID_ADMINS,
+        DOMAIN_ALIAS_RID_ADMINS,
         0, 0, 0, 0, 0, 0,
         &administratorsGroup)) {
         
@@ -151,9 +152,8 @@ public:
         catch (System::UnauthorizedAccessException^) {
             return TempMonitor::InitResult::DRIVER_FAILED;
         }
-        catch (System::Exception^ e) {
-            // Log the exception message for debugging
-            System::Diagnostics::Debug::WriteLine("TempMonitor initialization failed: " + e->Message);
+        catch (System::Exception^) {
+            // Failed to initialize - likely driver or permission issue
             return TempMonitor::InitResult::DRIVER_FAILED;
         }
         catch (...) {
@@ -162,7 +162,8 @@ public:
     }
     
     std::optional<TempStats> getCurrentStats() {
-        if (computer_ == nullptr || !hasCpuSensors_) {
+        Computer^ comp = computer_;
+        if (comp == nullptr || !hasCpuSensors_) {
             return std::nullopt;
         }
         
@@ -171,7 +172,7 @@ public:
             std::vector<int> cpuTemps;
             
             // Update and collect temperature data
-            for each (IHardware^ hardware in computer_->Hardware) {
+            for each (IHardware^ hardware in comp->Hardware) {
                 hardware->Update();
                 
                 if (hardware->HardwareType == HardwareType::Cpu) {
@@ -184,7 +185,7 @@ public:
                                 continue;  // Skip invalid readings
                             }
                             
-                            TempStats::SensorReading reading;
+                            SensorReading reading;
                             reading.name = ManagedToNative(sensor->Name);
                             reading.tempCelsius = temp;
                             reading.hardwareType = "CPU";
@@ -213,9 +214,10 @@ public:
     }
     
     void cleanup() {
-        if (computer_ != nullptr) {
+        Computer^ comp = computer_;
+        if (comp != nullptr) {
             try {
-                computer_->Close();
+                comp->Close();
             }
             catch (...) {
                 // Ignore errors during cleanup
@@ -226,7 +228,7 @@ public:
     }
 
 private:
-    Computer^ computer_;
+    gcroot<Computer^> computer_;
     bool hasCpuSensors_;
 };
 

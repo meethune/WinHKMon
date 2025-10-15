@@ -44,11 +44,26 @@ target_include_directories(WinHKMonLib
 )
 
 # Configure TempMonitor.cpp for C++/CLI compilation
-set_source_files_properties(src/WinHKMonLib/TempMonitor.cpp 
-    PROPERTIES 
-    COMPILE_FLAGS "/clr /AI\"${CMAKE_CURRENT_SOURCE_DIR}/lib\" /FU\"${CMAKE_CURRENT_SOURCE_DIR}/lib/LibreHardwareMonitorLib.dll\""
-    COMPILE_DEFINITIONS "UNICODE;_UNICODE"
-)
+# /clr requires /EHa (async exception handling) instead of /EHs
+if(MSVC)
+    # Find .NET Framework reference assemblies
+    # Typical locations for .NET Framework 4.x
+    set(DOTNET_FRAMEWORK_PATH "C:/Program Files (x86)/Reference Assemblies/Microsoft/Framework/.NETFramework/v4.7.2")
+    if(NOT EXISTS "${DOTNET_FRAMEWORK_PATH}")
+        set(DOTNET_FRAMEWORK_PATH "C:/Program Files (x86)/Reference Assemblies/Microsoft/Framework/.NETFramework/v4.8")
+    endif()
+    if(NOT EXISTS "${DOTNET_FRAMEWORK_PATH}")
+        set(DOTNET_FRAMEWORK_PATH "C:/Windows/Microsoft.NET/Framework64/v4.0.30319")
+    endif()
+    
+    set_source_files_properties(src/WinHKMonLib/TempMonitor.cpp 
+        PROPERTIES 
+        COMPILE_FLAGS "/clr /EHa /AI\"${DOTNET_FRAMEWORK_PATH}\" /AI\"${CMAKE_CURRENT_SOURCE_DIR}/lib\" /FU\"${CMAKE_CURRENT_SOURCE_DIR}/lib/LibreHardwareMonitorLib.dll\""
+        COMPILE_DEFINITIONS "UNICODE;_UNICODE"
+    )
+    
+    message(STATUS "C++/CLI .NET Framework path: ${DOTNET_FRAMEWORK_PATH}")
+endif()
 
 # Windows API libraries
 target_link_libraries(WinHKMonLib
