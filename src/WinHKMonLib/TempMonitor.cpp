@@ -21,17 +21,19 @@
  * - Validate all sensor readings
  */
 
+#pragma managed(push, off)
 #include "TempMonitor.h"
 #include <Windows.h>
 #include <sddl.h>
 #include <algorithm>
 #include <vector>
+#pragma managed(pop)
 
-// NOTE: When compiling on Windows with Visual Studio, uncomment these C++/CLI includes:
-// #using <LibreHardwareMonitorLib.dll>
-// using namespace LibreHardwareMonitor::Hardware;
-// using namespace System;
-// using namespace System::Collections::Generic;
+// C++/CLI includes for LibreHardwareMonitor integration
+#using <System.dll>
+#using <mscorlib.dll>
+using namespace System;
+using namespace System::Collections::Generic;
 
 namespace WinHKMon {
 
@@ -69,10 +71,33 @@ bool AdminPrivileges::IsRunningAsAdmin() {
 // TempMonitor Implementation (PIMPL Pattern)
 // ============================================================================
 
+// Forward declare managed type
+#pragma managed(push, on)
+using namespace LibreHardwareMonitor::Hardware;
+
+// Helper function to convert managed String^ to std::string
+static std::string ManagedToNative(String^ str) {
+    if (str == nullptr || str->Length == 0) {
+        return "";
+    }
+    
+    std::string result;
+    result.reserve(str->Length);
+    for (int i = 0; i < str->Length; i++) {
+        wchar_t wc = str[i];
+        if (wc < 128) {
+            result += static_cast<char>(wc);
+        } else {
+            result += '?';  // Simple fallback for non-ASCII
+        }
+    }
+    return result;
+}
+
 /**
  * @brief Private implementation class for TempMonitor
  * 
- * This class will contain managed C++ code when compiled with /clr.
+ * This class contains managed C++ code compiled with /clr.
  * Uses PIMPL pattern to hide C++/CLI types from header.
  */
 class TempMonitor::Impl {
@@ -84,24 +109,12 @@ public:
     }
     
     TempMonitor::InitResult initialize() {
-        // TODO: When compiling on Windows, implement:
-        // 1. Check if running as admin
-        // 2. Try to create Computer^ instance from LibreHardwareMonitor
-        // 3. Enable CPU and GPU sensors
-        // 4. Call computer->Open()
-        // 5. Check if any sensors available
-        // 6. Return appropriate InitResult
-        
-        // STUB IMPLEMENTATION (will be replaced):
-        return TempMonitor::InitResult::LIBRARY_MISSING;
-        
-        /* Windows C++/CLI Implementation Template:
-        
         try {
             // Create managed Computer object
             computer_ = gcnew Computer();
             computer_->IsCpuEnabled = true;
-            computer_->IsGpuEnabled = true;  // Optional
+            computer_->IsGpuEnabled = true;  // Optional for future FR-5.4
+            computer_->IsMotherboardEnabled = true;  // Optional for future FR-5.5
             
             // Open hardware monitoring
             computer_->Open();
@@ -117,15 +130,20 @@ public:
                             break;
                         }
                     }
+                    if (foundCpuSensors) break;
                 }
             }
             
             if (!foundCpuSensors) {
+                cleanup();
                 return TempMonitor::InitResult::NO_SENSORS;
             }
             
             hasCpuSensors_ = true;
             return TempMonitor::InitResult::SUCCESS;
+        }
+        catch (System::IO::FileNotFoundException^) {
+            return TempMonitor::InitResult::LIBRARY_MISSING;
         }
         catch (System::DllNotFoundException^) {
             return TempMonitor::InitResult::LIBRARY_MISSING;
@@ -133,26 +151,17 @@ public:
         catch (System::UnauthorizedAccessException^) {
             return TempMonitor::InitResult::DRIVER_FAILED;
         }
+        catch (System::Exception^ e) {
+            // Log the exception message for debugging
+            System::Diagnostics::Debug::WriteLine("TempMonitor initialization failed: " + e->Message);
+            return TempMonitor::InitResult::DRIVER_FAILED;
+        }
         catch (...) {
             return TempMonitor::InitResult::DRIVER_FAILED;
         }
-        */
     }
     
     std::optional<TempStats> getCurrentStats() {
-        // TODO: When compiling on Windows, implement:
-        // 1. Update all hardware sensors
-        // 2. Iterate through CPU sensors
-        // 3. Extract temperature values
-        // 4. Calculate min/max/avg
-        // 5. Populate TempStats structure
-        // 6. Return stats
-        
-        // STUB IMPLEMENTATION (will be replaced):
-        return std::nullopt;
-        
-        /* Windows C++/CLI Implementation Template:
-        
         if (computer_ == nullptr || !hasCpuSensors_) {
             return std::nullopt;
         }
@@ -167,25 +176,21 @@ public:
                 
                 if (hardware->HardwareType == HardwareType::Cpu) {
                     for each (ISensor^ sensor in hardware->Sensors) {
-                        if (sensor->SensorType == SensorType::Temperature) {
-                            if (sensor->Value.HasValue) {
-                                int temp = static_cast<int>(sensor->Value.Value);
-                                
-                                // Convert managed string to std::string
-                                String^ managedName = sensor->Name;
-                                std::string sensorName;
-                                for (int i = 0; i < managedName->Length; i++) {
-                                    sensorName += static_cast<char>(managedName[i]);
-                                }
-                                
-                                TempStats::SensorReading reading;
-                                reading.name = sensorName;
-                                reading.tempCelsius = temp;
-                                reading.hardwareType = "CPU";
-                                
-                                stats.cpuTemps.push_back(reading);
-                                cpuTemps.push_back(temp);
+                        if (sensor->SensorType == SensorType::Temperature && sensor->Value.HasValue) {
+                            int temp = static_cast<int>(sensor->Value.Value);
+                            
+                            // Validate temperature is in reasonable range
+                            if (temp < 0 || temp > 150) {
+                                continue;  // Skip invalid readings
                             }
+                            
+                            TempStats::SensorReading reading;
+                            reading.name = ManagedToNative(sensor->Name);
+                            reading.tempCelsius = temp;
+                            reading.hardwareType = "CPU";
+                            
+                            stats.cpuTemps.push_back(reading);
+                            cpuTemps.push_back(temp);
                         }
                     }
                 }
@@ -199,23 +204,15 @@ public:
             
             return std::nullopt;
         }
+        catch (System::Exception^) {
+            return std::nullopt;
+        }
         catch (...) {
             return std::nullopt;
         }
-        */
     }
     
     void cleanup() {
-        // TODO: When compiling on Windows, implement:
-        // 1. Close computer object
-        // 2. Release managed resources
-        
-        // STUB IMPLEMENTATION:
-        computer_ = nullptr;
-        hasCpuSensors_ = false;
-        
-        /* Windows C++/CLI Implementation Template:
-        
         if (computer_ != nullptr) {
             try {
                 computer_->Close();
@@ -226,14 +223,14 @@ public:
             computer_ = nullptr;
         }
         hasCpuSensors_ = false;
-        */
     }
 
 private:
-    // Managed pointer (gcroot) - requires C++/CLI
-    void* computer_;  // In C++/CLI: gcroot<Computer^> computer_;
+    Computer^ computer_;
     bool hasCpuSensors_;
 };
+
+#pragma managed(pop)
 
 // ============================================================================
 // TempMonitor Public Interface

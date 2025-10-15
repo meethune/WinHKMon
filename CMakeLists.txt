@@ -35,11 +35,19 @@ add_library(WinHKMonLib STATIC
     src/WinHKMonLib/DeltaCalculator.cpp
     src/WinHKMonLib/NetworkMonitor.cpp
     src/WinHKMonLib/DiskMonitor.cpp
+    src/WinHKMonLib/TempMonitor.cpp
 )
 
 target_include_directories(WinHKMonLib
     PUBLIC
         ${CMAKE_CURRENT_SOURCE_DIR}/include
+)
+
+# Configure TempMonitor.cpp for C++/CLI compilation
+set_source_files_properties(src/WinHKMonLib/TempMonitor.cpp 
+    PROPERTIES 
+    COMPILE_FLAGS "/clr /AI\"${CMAKE_CURRENT_SOURCE_DIR}/lib\" /FU\"${CMAKE_CURRENT_SOURCE_DIR}/lib/LibreHardwareMonitorLib.dll\""
+    COMPILE_DEFINITIONS "UNICODE;_UNICODE"
 )
 
 # Windows API libraries
@@ -58,6 +66,14 @@ add_executable(WinHKMon
 target_link_libraries(WinHKMon
     PRIVATE
         WinHKMonLib
+)
+
+# Copy LibreHardwareMonitorLib.dll to output directory
+add_custom_command(TARGET WinHKMon POST_BUILD
+    COMMAND ${CMAKE_COMMAND} -E copy_if_different
+        "${CMAKE_CURRENT_SOURCE_DIR}/lib/LibreHardwareMonitorLib.dll"
+        "$<TARGET_FILE_DIR:WinHKMon>"
+    COMMENT "Copying LibreHardwareMonitorLib.dll to output directory"
 )
 
 # Testing
