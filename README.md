@@ -186,6 +186,13 @@ WinHKMon CPU TEMP --continuous --interval 1
 - **CMake 3.20+** (included with VS 2022)
 - **Windows SDK 10.0.19041+** (included with VS 2022)
 
+**For Temperature Monitoring (Phase 5 / v1.0):**
+- **.NET Framework 4.7.2+ SDK** (required for C++/CLI compilation)
+  - Install via Visual Studio Installer → Individual Components → ".NET Framework 4.7.2 targeting pack" or ".NET Framework 4.8 SDK"
+- **LibreHardwareMonitorLib.dll** (v0.9.3+)
+  - Included in `lib/` directory
+  - Source: https://github.com/LibreHardwareMonitor/LibreHardwareMonitor
+
 ### Build Steps
 
 ```bash
@@ -417,7 +424,7 @@ See [tasks.md](/.specify/features/winhkmon-system-resource-monitoring/tasks.md) 
   - GlobalMemoryStatusEx - Memory
   - IP Helper API (MIB_IF_ROW2) - Network
   - CallNtPowerInformation - CPU frequency
-  - LibreHardwareMonitor - Temperature (optional)
+  - LibreHardwareMonitor (v0.9.3+) - Temperature (Phase 5, requires .NET Framework 4.7.2+ SDK)
 
 ### System Requirements
 
@@ -430,6 +437,7 @@ See [tasks.md](/.specify/features/winhkmon-system-resource-monitoring/tasks.md) 
 - Visual Studio 2022 with C++ workload
 - CMake 3.20+
 - Windows SDK 10.0.19041+
+- .NET Framework 4.7.2+ SDK (for temperature monitoring)
 
 ---
 

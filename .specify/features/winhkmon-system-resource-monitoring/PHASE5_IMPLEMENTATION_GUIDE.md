@@ -33,10 +33,15 @@ This document provides complete implementation guidance for Phase 5 (US3 - Therm
 
 1. **Windows 10 21H2+ or Windows 11**
 2. **Visual Studio 2022**
-   - Workload: .NET Desktop Development
-   - Component: C++/CLI support
+   - Workload: Desktop development with C++
+   - **Required Component**: .NET Framework 4.7.2 SDK (or 4.8)
+     - Install via: Visual Studio Installer → Individual Components → ".NET Framework 4.7.2 targeting pack"
+   - **Required Component**: C++/CLI support for v143 build tools
 3. **CMake 3.20+**
 4. **Git** (for version control)
+
+**Why .NET Framework SDK?**  
+TempMonitor uses C++/CLI to integrate LibreHardwareMonitor (.NET library) into native C++ code. The test executable becomes a mixed-mode assembly requiring CLR support and .NET Framework reference assemblies.
 
 ### Library Requirements
 
