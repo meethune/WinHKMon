@@ -153,13 +153,15 @@ jobs:
       - name: Generate Build Summary
         if: always()
         run: |
-          $status = if ($LASTEXITCODE -eq 0) { "✅ Success" } else { "❌ Failed" }
+          # Check job status from GitHub context, not $LASTEXITCODE
+          $status = if ("${{ job.status }}" -eq "success") { "✅ Success" } else { "❌ Failed" }
           echo "## Build Summary - ${{ matrix.build_type }} (${{ matrix.architecture }})" >> $env:GITHUB_STEP_SUMMARY
           echo "" >> $env:GITHUB_STEP_SUMMARY
           echo "- **Status:** $status" >> $env:GITHUB_STEP_SUMMARY
           echo "- **Build Type:** ${{ matrix.build_type }}" >> $env:GITHUB_STEP_SUMMARY
           echo "- **Architecture:** ${{ matrix.architecture }}" >> $env:GITHUB_STEP_SUMMARY
           echo "- **Commit:** ${{ github.sha }}" >> $env:GITHUB_STEP_SUMMARY
+          echo "- **Job Status:** ${{ job.status }}" >> $env:GITHUB_STEP_SUMMARY
 
   code-quality:
     name: Code Quality Checks
